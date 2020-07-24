@@ -1,0 +1,2 @@
+rootProject.name='VoiceAnalyzer'
+include ':app'
