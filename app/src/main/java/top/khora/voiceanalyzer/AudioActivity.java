@@ -20,18 +20,26 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Date;
+
+import top.khora.voiceanalyzer.Util.FFT;
 
 public class AudioActivity extends AppCompatActivity implements View.OnClickListener {
     private static String TAG="AudioActivity";
+    public static String path;
     private Button btn_open;
     private Button btn_stop;
+    private Button btn_fre;
+    private Button btn_analy;
+    private Button btn_set;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        path=getExternalFilesDir("").getPath();
         checkAuth();
         initial();
         initMinBufferSize();
@@ -77,8 +85,14 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private void initial(){
         btn_open = findViewById(R.id.audio_act_btn_open);
         btn_stop = findViewById(R.id.audio_act_btn_stop);
+        btn_fre = findViewById(R.id.audio_act_btn_open);
+        btn_analy = findViewById(R.id.audio_act_btn_stop);
+        btn_set = findViewById(R.id.audio_act_btn_open);
         btn_open.setOnClickListener(this);
         btn_stop.setOnClickListener(this);
+        btn_fre.setOnClickListener(this);
+        btn_analy.setOnClickListener(this);
+        btn_set.setOnClickListener(this);
     }
 
     /**
@@ -125,7 +139,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
          * */
         mRecordBufferSize = AudioRecord.getMinBufferSize(8000
                 , AudioFormat.CHANNEL_IN_MONO
-                , AudioFormat.ENCODING_PCM_16BIT);
+                , AudioFormat.ENCODING_PCM_16BIT);//8000，单声道，16位：默认取到最小缓冲为640byte，计算方法暂时不知道
     }
     /**
      * 二、初始化音频录制AudioRecord
@@ -141,7 +155,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
          * 第五个参数缓存区大小,就是上面我们配置的AudioRecord.getMinBufferSize
          * */
         mAudioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC
-                , 8000
+                , 8192
                 , AudioFormat.CHANNEL_IN_MONO
                 , AudioFormat.ENCODING_PCM_16BIT
                 , mRecordBufferSize);
@@ -164,9 +178,18 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 FileOutputStream fileOutputStream = null;
                 try {
                     fileOutputStream = new FileOutputStream(pcmFile);
-                    byte[] bytes = new byte[mRecordBufferSize];
+                    byte[] bytes = new byte[4096];
                     while (mWhetherRecord){
                         mAudioRecord.read(bytes, 0, bytes.length);//读取流
+//                        Log.e("BYTES--LENGTH",bytes.length+"");
+                        Double maxFre=FFT.fft(bytes);
+                        if (maxFre>=49 && maxFre<=400) {//过滤
+                            Log.e(TAG,"最大响度的频率："+maxFre);
+                        }
+//                        while (count*128<bytes.length) {
+//                            FFT.fft(Arrays.copyOfRange(bytes,count*128,(count+1)*128));
+//                            count++;
+//                        }
                         fileOutputStream.write(bytes);
                         fileOutputStream.flush();
                     }

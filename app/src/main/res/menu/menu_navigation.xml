@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:title="频率图形"
+        android:id="@+id/menu_tree">
+
+    </item>
+    <item android:title="声音分析"
+        android:id="@+id/menu_stack">
+
+    </item>
+    <item android:title="应用设置"
+        android:id="@+id/menu_quicksort">
+
+    </item>
+
+</menu>

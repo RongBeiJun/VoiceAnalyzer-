@@ -7,19 +7,55 @@
     android:orientation="vertical"
     tools:context=".AudioActivity">
 
-    <Button
-        android:id="@+id/audio_act_btn_open"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical">
 
-        android:layout_gravity="center_horizontal"
-        android:text="录制开始" />
+        <Button
+            android:id="@+id/audio_act_btn_open"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
 
-    <Button
-        android:id="@+id/audio_act_btn_stop"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:text="停止录制" />
+            android:layout_gravity="center_horizontal"
+            android:text="录制开始" />
 
+        <Button
+            android:id="@+id/audio_act_btn_stop"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="停止录制" />
+
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="11"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/audio_act_btn_page_fre"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="频率" />
+
+        <Button
+            android:id="@+id/audio_act_btn_page_anlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="分析" />
+
+        <Button
+            android:id="@+id/audio_act_btn_page_set"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="设置" />
+    </LinearLayout>
 </LinearLayout>
