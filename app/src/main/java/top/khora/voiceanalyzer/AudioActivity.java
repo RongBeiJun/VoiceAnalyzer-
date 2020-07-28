@@ -16,12 +16,21 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import top.khora.voiceanalyzer.Util.FFT;
 
@@ -33,6 +42,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private Button btn_fre;
     private Button btn_analy;
     private Button btn_set;
+    private LineChart chart;
 
 
     @Override
@@ -88,11 +98,28 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         btn_fre = findViewById(R.id.audio_act_btn_open);
         btn_analy = findViewById(R.id.audio_act_btn_stop);
         btn_set = findViewById(R.id.audio_act_btn_open);
+        chart = findViewById(R.id.chart);
         btn_open.setOnClickListener(this);
         btn_stop.setOnClickListener(this);
         btn_fre.setOnClickListener(this);
         btn_analy.setOnClickListener(this);
         btn_set.setOnClickListener(this);
+    }
+    protected void updateChart(HashMap hashMap){
+        List<Entry> entries=new ArrayList<>();
+        Iterator it=hashMap.entrySet().iterator();
+        while (it.hasNext()){
+            Map.Entry HMentry = (Map.Entry) it.next();
+            Entry entry=new Entry(Float.valueOf(String.valueOf(HMentry.getKey()))
+                    ,Float.valueOf(String.valueOf(HMentry.getValue())));
+            entries.add(entry);
+        }
+        LineDataSet dataSet = new LineDataSet(entries, "Label"); // add entries to dataset
+        dataSet.setColor(R.color.testChart1);
+        dataSet.setValueTextColor(R.color.testChart1); // styling, ...
+        LineData lineData = new LineData(dataSet);
+        chart.setData(lineData);
+        chart.invalidate(); // refresh
     }
 
     /**
@@ -178,14 +205,19 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 FileOutputStream fileOutputStream = null;
                 try {
                     fileOutputStream = new FileOutputStream(pcmFile);
-                    byte[] bytes = new byte[8192];
+                    byte[] bytes = new byte[4096];
+                    HashMap<Double,Double> hmAllFre;
                     while (mWhetherRecord){
                         mAudioRecord.read(bytes, 0, bytes.length);//读取流
 //                        Log.e("BYTES--LENGTH",bytes.length+"");
-                        Double maxFre=FFT.fft(bytes);
+                        List resList=FFT.fft(bytes);
+                        double maxFre= (double) resList.get(0);
+                        hmAllFre= (HashMap<Double, Double>) resList.get(1);
+                        Log.e(TAG,"hm大小"+hmAllFre.size());
                         if (maxFre>=49 && maxFre<=500) {//过滤
                             Log.e(TAG,"最大响度的频率："+maxFre);
                         }
+                        updateChart(hmAllFre);
 //                        while (count*128<bytes.length) {
 //                            FFT.fft(Arrays.copyOfRange(bytes,count*128,(count+1)*128));
 //                            count++;

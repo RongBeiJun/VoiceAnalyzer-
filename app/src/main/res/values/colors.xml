@@ -4,4 +4,6 @@
     <color name="colorPrimaryDark">#3700B3</color>
     <color name="colorAccent">#03DAC5</color>
     <color name="launch_blue">#4CA5CD</color>
+    <color name="testChart1">#684CCD</color>
+    <color name="testChart2">#9C4CCD</color>
 </resources>
