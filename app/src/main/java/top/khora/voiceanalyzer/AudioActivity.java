@@ -178,12 +178,12 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 FileOutputStream fileOutputStream = null;
                 try {
                     fileOutputStream = new FileOutputStream(pcmFile);
-                    byte[] bytes = new byte[4096];
+                    byte[] bytes = new byte[8192];
                     while (mWhetherRecord){
                         mAudioRecord.read(bytes, 0, bytes.length);//读取流
 //                        Log.e("BYTES--LENGTH",bytes.length+"");
                         Double maxFre=FFT.fft(bytes);
-                        if (maxFre>=49 && maxFre<=400) {//过滤
+                        if (maxFre>=49 && maxFre<=500) {//过滤
                             Log.e(TAG,"最大响度的频率："+maxFre);
                         }
 //                        while (count*128<bytes.length) {

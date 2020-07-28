@@ -49,9 +49,15 @@ public class FFT{
 //        StringBuilder sb=new StringBuilder();
         double zongzhenfu=0;
         double MaxSoundFre=0;
-        for(int i=0;i<500;i++){
+        for(int i=0;i<4096;i++){
             Fres[i]=8000/(result.length)*(i+1)*1.0;//fft求频率公式
-            zhenfus[i]=i==0?(result[i].getReal()/result.length/2): (result[i].getReal()/result.length);
+//            zhenfus[i]=(i==0?(result[i].getReal()/result.length): (result[i].getReal()/(result.length/2)));
+            zhenfus[i]=Math.sqrt(Math.pow(result[i].getReal(),2)+Math.pow(result[i].getImaginary(),2));
+            if (i==0){
+                zhenfus[i]=zhenfus[i]/result.length;
+            }else {
+                zhenfus[i]=zhenfus[i]/(result.length/2);
+            }
             if (Math.abs(zhenfus[i])>zongzhenfu){
                 zongzhenfu=Math.abs(zhenfus[i]);
                 MaxSoundFre=Fres[i];
@@ -62,8 +68,8 @@ public class FFT{
 //            Log.e("FFT傅里叶变换","第"+i+"个变换后频率为："+Fres[i]+"振幅："+zhenfus[i]);
 //            System.out.println("第"+i+"个变换后数据为："+result[i]);
         }
-        return MaxSoundFre;
 //        FileUtils.writeLog(AudioActivity.path+"/voice-" + new Date().getTime()+".csv",sb.toString());
+        return MaxSoundFre;
     }
     public static double[] bytesArr2DoubleArr(byte[] arr) {
         long value = 0;
