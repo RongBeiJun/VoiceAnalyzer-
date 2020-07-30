@@ -237,7 +237,9 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private boolean mWhetherRecord;
     private File pcmFile;
     private String fname;
-    byte[] bytes = new byte[fftNum];
+//    byte[] bytes = new byte[fftNum];
+    short[] shorts = new short[fftNum/2];
+
     private void startRecord(){
         Log.i(TAG,"---startRecord---");
         fname= String.valueOf(new Date().getTime());
@@ -249,44 +251,45 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 mAudioRecord.startRecording();//开始录制
                 FileOutputStream fileOutputStream = null;
                 try {
-                    audioHandler.post(fftRunnable);
+//                    audioHandler.post(fftRunnable);
                     fileOutputStream = new FileOutputStream(pcmFile);
-                    bytes = new byte[fftNum];//16位即2比特一个数值，所以fft计算点为该大小/2
-//                    HashMap<Double,Double> hmAllFre;
-//                    ArrayDeque<Float> VoiceFreDeque=new ArrayDeque<>(80);
-//                    for (int i=0;i<80;++i){
-//                        VoiceFreDeque.push((float) 0);
-//                    }
+//                    bytes = new byte[fftNum];//16位即2比特一个数值，所以fft计算点为该大小/2
+                    shorts=new short[fftNum/2];
+                    HashMap<Double,Double> hmAllFre;
+                    ArrayDeque<Float> VoiceFreDeque=new ArrayDeque<>(80);
+                    for (int i=0;i<80;++i){
+                        VoiceFreDeque.push((float) 0);
+                    }
                     while (mWhetherRecord){
-                        mAudioRecord.read(bytes, 0, bytes.length);//读取流
+                        mAudioRecord.read(shorts, 0, shorts.length);//读取流
 //
-//                        Log.e("BYTES--LENGTH",bytes.length+"");
-//                        List resList=FFT.fft(bytes);
-//                        double maxFre= (double) resList.get(0);
-//                        hmAllFre= (HashMap<Double, Double>) resList.get(1);
-//                        Log.e(TAG,"hm大小"+hmAllFre.size());
-//                        if (maxFre>=49 && maxFre<=500) {//过滤
-//                            Log.e(TAG,"最大响度的频率："+maxFre);
-//                            if (VoiceFreDeque.size()>=80) {
-//                                VoiceFreDeque.pop();
-//                            }
-//                            VoiceFreDeque.add((float) maxFre);
-//                        }else {
-//                            if (VoiceFreDeque.size()>=80) {
-//                                VoiceFreDeque.pop();
-//                            }
-//                            VoiceFreDeque.add((float) 0);
-//                        }
-//
-////                        updateChartForVoiceFre(VoiceFreDeque);//时间-主频率图
-//
-//                        updateChart(hmAllFre);//某次fft的频谱图
+                        Log.e("BYTES--LENGTH",shorts.length+"");
+                        List resList=FFT.fft(shorts);
+                        double maxFre= (double) resList.get(0);
+                        hmAllFre= (HashMap<Double, Double>) resList.get(1);
+                        Log.e(TAG,"hm大小"+hmAllFre.size());
+                        if (maxFre>=49 && maxFre<=500) {//过滤
+                            Log.e(TAG,"最大响度的频率："+maxFre);
+                            if (VoiceFreDeque.size()>=80) {
+                                VoiceFreDeque.pop();
+                            }
+                            VoiceFreDeque.add((float) maxFre);
+                        }else {
+                            if (VoiceFreDeque.size()>=80) {
+                                VoiceFreDeque.pop();
+                            }
+                            VoiceFreDeque.add((float) 0);
+                        }
+
+//                        updateChartForVoiceFre(VoiceFreDeque);//时间-主频率图
+
+                        updateChart(hmAllFre);//某次fft的频谱图
 
 //                        while (count*128<bytes.length) {
 //                            FFT.fft(Arrays.copyOfRange(bytes,count*128,(count+1)*128));
 //                            count++;
 //                        }
-                        fileOutputStream.write(bytes);
+                        fileOutputStream.write(short2byte(shorts));
                         fileOutputStream.flush();
                     }
                     Log.e(TAG, "run: 暂停录制" );
@@ -330,6 +333,17 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         mAudioRecord.release();
     }
 
+    //convert short to byte
+    private byte[] short2byte(short[] sData) {
+        int shortArrsize = sData.length;
+        byte[] bytes = new byte[shortArrsize * 2];
+        for (int i = 0; i < shortArrsize; i++) {
+            bytes[i * 2] = (byte) (sData[i] & 0x00FF);
+            bytes[(i * 2) + 1] = (byte) (sData[i] >> 8);
+            sData[i] = 0;
+        }
+        return bytes;
+    }
     Runnable fftRunnable=new Runnable() {
         @Override
         public void run() {
@@ -337,7 +351,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
             HashMap<Double,Double> hmAllFre;
             ArrayDeque<Float> VoiceFreDeque=new ArrayDeque<>(80);
 //            mAudioRecord.read(bytes, 0, bytes.length);//读取流
-            List resList=FFT.fft(bytes);
+            List resList=FFT.fft(shorts);
             double maxFre= (double) resList.get(0);
             hmAllFre= (HashMap<Double, Double>) resList.get(1);
             Log.e(TAG,"hm大小"+hmAllFre.size());

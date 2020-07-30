@@ -42,12 +42,15 @@ public class FFT{
         }
     }
 
-    public static List fft(byte[] bytes) {
+    public static List fft(short[] shorts) {
         List res=new ArrayList();
         HashMap<Double,Double> hm4AllFre=new HashMap<>();
         //创建傅里叶方法实例
         FastFourierTransformer fft = new FastFourierTransformer(DftNormalization.STANDARD);
-        double[] preFFT=ByteArray2DoubleArray(bytes);
+        double[] preFFT=new double[shorts.length];
+        for (int i=0;i<shorts.length;++i){
+            preFFT[i]=Double.parseDouble(String.valueOf(shorts[i]));
+        }
         Complex[] result = fft.transform(preFFT, TransformType.FORWARD);
         Double[] Fres=new Double[result.length];
         Double[] zhenfus=new Double[result.length];
@@ -73,12 +76,12 @@ public class FFT{
             }
             AllZhenfu+=zhenfus[i];
             hm4AllFre.put(Fres[i],zhenfus[i]);
-            sb.append(Fres[i]+","+zhenfus[i]+","+result[i].getReal()+","+result[i].getImaginary()
-                    +","+preFFT[i]+","+bytes[2*i]+","+bytes[2*i+1]+"\n");
+//            sb.append(Fres[i]+","+zhenfus[i]+","+result[i].getReal()+","+result[i].getImaginary()
+//                    +","+preFFT[i]+","+shorts[i]+"\n");
 //            Log.e("FFT傅里叶变换","第"+i+"个变换后频率为："+Fres[i]+"振幅："+zhenfus[i]);
 //            System.out.println("第"+i+"个变换后数据为："+result[i]);
         }
-        FileUtils.writeLog(AudioActivity.path+"/voice-" + new Date().getTime()+".csv",sb.toString());
+//        FileUtils.writeLog(AudioActivity.path+"/voice-" + new Date().getTime()+".csv",sb.toString());
         if (MaxSoundFre>(0.9*(AllZhenfu/AudioActivity.fftNumOfDrawPoints))) {
             res.add(MaxSoundFre);
         }else {
