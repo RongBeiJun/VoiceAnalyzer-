@@ -11,12 +11,15 @@ import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
@@ -25,12 +28,15 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.math.BigDecimal;
 
 import top.khora.voiceanalyzer.Util.FFT;
 
@@ -43,6 +49,12 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private Button btn_analy;
     private Button btn_set;
     private LineChart chart;
+
+    public static int sampleRate=8192;
+    public static int fftNum=4096;//根据fft方法的原理需要为2的整数幂
+    //sampleRate/(fftNum/2)为fft后的频谱图的频率的区间单位,因为两个比特转为一个double
+
+    public static int fftNumOfDrawPoints=1000;//最多用前一半，即不可超过（fftNum/2）
 
 
     @Override
@@ -119,6 +131,37 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         dataSet.setValueTextColor(R.color.testChart1); // styling, ...
         LineData lineData = new LineData(dataSet);
         chart.setData(lineData);
+        XAxis xAxis=chart.getXAxis();
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setAxisMaximum(2500);
+        xAxis.setAxisMinimum(20);
+
+        YAxis yAxis=chart.getAxisLeft();
+        yAxis.setAxisMaximum(120);
+        yAxis.setAxisMinimum(0);
+        YAxis yAxis2=chart.getAxisRight();
+        yAxis2.setAxisMaximum(120);
+        yAxis2.setAxisMinimum(0);
+
+        chart.invalidate(); // refresh
+//        if (mWhetherRecord) {
+//            audioHandler.postDelayed(fftRunnable,1);
+//        }
+    }
+    protected void updateChartForVoiceFre(Deque deque){
+        List<Entry> entries=new ArrayList<>();
+        List<Float> queueData=new ArrayList<>(deque);
+//        System.out.println(queueData.toString());
+        for (int i=0;i<queueData.size();++i){
+            Entry entry=new Entry(i,(Float) queueData.get(i));
+            entries.add(entry);
+        }
+
+        LineDataSet dataSet = new LineDataSet(entries, "Label"); // add entries to dataset
+        dataSet.setColor(R.color.testChart1);
+        dataSet.setValueTextColor(R.color.testChart1); // styling, ...
+        LineData lineData = new LineData(dataSet);
+        chart.setData(lineData);
         chart.invalidate(); // refresh
     }
 
@@ -164,9 +207,10 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
          * public static final int ENCODING_AAC_HE_V1 = 11;
          * public static final int ENCODING_AAC_HE_V2 = 12;
          * */
-        mRecordBufferSize = AudioRecord.getMinBufferSize(8000
+        mRecordBufferSize = AudioRecord.getMinBufferSize(sampleRate
                 , AudioFormat.CHANNEL_IN_MONO
                 , AudioFormat.ENCODING_PCM_16BIT);//8000，单声道，16位：默认取到最小缓冲为640byte，计算方法暂时不知道
+        System.out.println("最小缓冲："+mRecordBufferSize);
     }
     /**
      * 二、初始化音频录制AudioRecord
@@ -182,7 +226,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
          * 第五个参数缓存区大小,就是上面我们配置的AudioRecord.getMinBufferSize
          * */
         mAudioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC
-                , 8192
+                , sampleRate
                 , AudioFormat.CHANNEL_IN_MONO
                 , AudioFormat.ENCODING_PCM_16BIT
                 , mRecordBufferSize);
@@ -193,6 +237,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private boolean mWhetherRecord;
     private File pcmFile;
     private String fname;
+    byte[] bytes = new byte[fftNum];
     private void startRecord(){
         Log.i(TAG,"---startRecord---");
         fname= String.valueOf(new Date().getTime());
@@ -204,20 +249,39 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 mAudioRecord.startRecording();//开始录制
                 FileOutputStream fileOutputStream = null;
                 try {
+                    audioHandler.post(fftRunnable);
                     fileOutputStream = new FileOutputStream(pcmFile);
-                    byte[] bytes = new byte[4096];
-                    HashMap<Double,Double> hmAllFre;
+                    bytes = new byte[fftNum];//16位即2比特一个数值，所以fft计算点为该大小/2
+//                    HashMap<Double,Double> hmAllFre;
+//                    ArrayDeque<Float> VoiceFreDeque=new ArrayDeque<>(80);
+//                    for (int i=0;i<80;++i){
+//                        VoiceFreDeque.push((float) 0);
+//                    }
                     while (mWhetherRecord){
                         mAudioRecord.read(bytes, 0, bytes.length);//读取流
+//
 //                        Log.e("BYTES--LENGTH",bytes.length+"");
-                        List resList=FFT.fft(bytes);
-                        double maxFre= (double) resList.get(0);
-                        hmAllFre= (HashMap<Double, Double>) resList.get(1);
-                        Log.e(TAG,"hm大小"+hmAllFre.size());
-                        if (maxFre>=49 && maxFre<=500) {//过滤
-                            Log.e(TAG,"最大响度的频率："+maxFre);
-                        }
-                        updateChart(hmAllFre);
+//                        List resList=FFT.fft(bytes);
+//                        double maxFre= (double) resList.get(0);
+//                        hmAllFre= (HashMap<Double, Double>) resList.get(1);
+//                        Log.e(TAG,"hm大小"+hmAllFre.size());
+//                        if (maxFre>=49 && maxFre<=500) {//过滤
+//                            Log.e(TAG,"最大响度的频率："+maxFre);
+//                            if (VoiceFreDeque.size()>=80) {
+//                                VoiceFreDeque.pop();
+//                            }
+//                            VoiceFreDeque.add((float) maxFre);
+//                        }else {
+//                            if (VoiceFreDeque.size()>=80) {
+//                                VoiceFreDeque.pop();
+//                            }
+//                            VoiceFreDeque.add((float) 0);
+//                        }
+//
+////                        updateChartForVoiceFre(VoiceFreDeque);//时间-主频率图
+//
+//                        updateChart(hmAllFre);//某次fft的频谱图
+
 //                        while (count*128<bytes.length) {
 //                            FFT.fft(Arrays.copyOfRange(bytes,count*128,(count+1)*128));
 //                            count++;
@@ -254,7 +318,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         Log.i(TAG,"---addHeadData---");
         pcmFile = new File(AudioActivity.this.getExternalCacheDir().getPath(),"audioRecord"+fname+".pcm");
         File handlerWavFile = new File(AudioActivity.this.getExternalCacheDir().getPath(),"audioRecord_handler"+fname+".wav");
-        PcmToWavUtil pcmToWavUtil = new PcmToWavUtil(8000,AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT);
+        PcmToWavUtil pcmToWavUtil = new PcmToWavUtil(sampleRate,AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT);
         pcmToWavUtil.pcmToWav(pcmFile.toString(),handlerWavFile.toString());
     }
     /**
@@ -265,6 +329,40 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         Log.i(TAG,"---releaseAR---");
         mAudioRecord.release();
     }
+
+    Runnable fftRunnable=new Runnable() {
+        @Override
+        public void run() {
+//            byte[] bytes = new byte[fftNum];//16位即2比特一个数值，所以fft计算点为该大小/2
+            HashMap<Double,Double> hmAllFre;
+            ArrayDeque<Float> VoiceFreDeque=new ArrayDeque<>(80);
+//            mAudioRecord.read(bytes, 0, bytes.length);//读取流
+            List resList=FFT.fft(bytes);
+            double maxFre= (double) resList.get(0);
+            hmAllFre= (HashMap<Double, Double>) resList.get(1);
+            Log.e(TAG,"hm大小"+hmAllFre.size());
+            if (maxFre>=49 && maxFre<=500) {//过滤
+                Log.e(TAG,"最大响度的频率："+maxFre);
+                if (VoiceFreDeque.size()>=80) {
+                    VoiceFreDeque.pop();
+                }
+                VoiceFreDeque.add((float) maxFre);
+            }else {
+                if (VoiceFreDeque.size()>=80) {
+                    VoiceFreDeque.pop();
+                }
+                VoiceFreDeque.add((float) 0);
+            }
+
+//            updateChartForVoiceFre(VoiceFreDeque);//时间-主频率图
+
+            updateChart(hmAllFre);//某次fft的频谱图
+            if (mWhetherRecord) {
+                audioHandler.postDelayed(fftRunnable,40);
+            }
+        }
+    };
+    Handler audioHandler=new Handler();
 
     @Override
     public void onClick(View v) {
