@@ -82,11 +82,12 @@ public class FFT{
 //            System.out.println("第"+i+"个变换后数据为："+result[i]);
         }
 //        FileUtils.writeLog(AudioActivity.path+"/voice-" + new Date().getTime()+".csv",sb.toString());
-        if (MaxSoundFre>(0.9*(AllZhenfu/AudioActivity.fftNumOfDrawPoints))) {
-            res.add(MaxSoundFre);
-        }else {
-            res.add(-0.1);
-        }
+//        if (MaxSoundFre>(0.9*(AllZhenfu/AudioActivity.fftNumOfDrawPoints))) {
+//            res.add(MaxSoundFre);
+//        }else {
+//            res.add(-0.1);
+//        }
+        res.add(MaxSoundFre);
         res.add(hm4AllFre);
         return res;
     }

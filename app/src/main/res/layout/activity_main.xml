@@ -10,6 +10,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:id="@+id/linearlayout_1"
+        android:visibility="gone"
         android:layout_weight="1"
         android:orientation="vertical">
 
@@ -28,12 +30,53 @@
             android:layout_gravity="center_horizontal"
             android:text="停止录制" />
         <com.github.mikephil.charting.charts.LineChart
-            android:id="@+id/chart"
+            android:id="@+id/chart_voice"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
 
     </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/linearlayout_2"
+        android:visibility="gone"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/chart_fft"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/linearlayout_3"
+        android:visibility="gone"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+
+
+
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/linearlayout_4"
+        android:visibility="gone"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+
+
+
+    </LinearLayout>
+
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -47,6 +90,12 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:text="频率" />
+        <Button
+            android:id="@+id/audio_act_btn_page_fft"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="频谱" />
 
         <Button
             android:id="@+id/audio_act_btn_page_anlay"
