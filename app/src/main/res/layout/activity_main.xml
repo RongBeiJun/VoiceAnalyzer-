@@ -19,7 +19,7 @@
             android:id="@+id/audio_act_btn_open"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-
+            android:visibility="gone"
             android:layout_gravity="center_horizontal"
             android:text="录制开始" />
 
@@ -27,12 +27,14 @@
             android:id="@+id/audio_act_btn_stop"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:visibility="gone"
             android:layout_gravity="center_horizontal"
             android:text="停止录制" />
-        <com.github.mikephil.charting.charts.LineChart
+        <top.khora.voiceanalyzer.Util.DetailScatterChart
             android:id="@+id/chart_voice"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent" >
+        </top.khora.voiceanalyzer.Util.DetailScatterChart>
 
 
     </LinearLayout>
@@ -89,26 +91,35 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="频率" />
+            android:background="@drawable/btn_shape_radius_left"
+            android:text="频率"
+            android:textColor="@color/bottom_btn_textColor" />
+
         <Button
             android:id="@+id/audio_act_btn_page_fft"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="频谱" />
+            android:background="@color/bottom_btn_background"
+            android:text="频谱"
+            android:textColor="@color/bottom_btn_textColor" />
 
         <Button
             android:id="@+id/audio_act_btn_page_anlay"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="分析" />
+            android:background="@color/bottom_btn_background"
+            android:text="分析"
+            android:textColor="@color/bottom_btn_textColor" />
 
         <Button
             android:id="@+id/audio_act_btn_page_set"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="设置" />
+            android:background="@drawable/btn_shape_radius_right"
+            android:text="设置"
+            android:textColor="@color/bottom_btn_textColor" />
     </LinearLayout>
 </LinearLayout>

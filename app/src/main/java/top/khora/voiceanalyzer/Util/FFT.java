@@ -1,8 +1,5 @@
 package top.khora.voiceanalyzer.Util;
 
-import android.provider.MediaStore;
-import android.util.Log;
-
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
@@ -10,7 +7,6 @@ import org.apache.commons.math3.transform.TransformType;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -42,20 +38,30 @@ public class FFT{
         }
     }
 
+    private static double preAvg=0;
+    private static double thresholdRate=0.3;
+    private static int filterSampleNum;
     public static List fft(short[] shorts) {
+        filterSampleNum=0;
         List res=new ArrayList();
         HashMap<Double,Double> hm4AllFre=new HashMap<>();
         //创建傅里叶方法实例
         FastFourierTransformer fft = new FastFourierTransformer(DftNormalization.STANDARD);
         double[] preFFT=new double[shorts.length];
         for (int i=0;i<shorts.length;++i){
-            preFFT[i]=Double.parseDouble(String.valueOf(shorts[i]));
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//                preFFT[i]=Double.parseDouble(String.valueOf(toUnsignedInt(shorts[i])));
+//            }else {
+//                Log.e("FFT","版本低于安卓O，转码会失败");
+//            }
+            preFFT[i]=Double.parseDouble(String.valueOf(shorts[i]));//8-4:正确格式
+//            preFFT[i]=Double.parseDouble(String.valueOf(toUnsignedInt(reverseByBit(shorts[i]))));
         }
         Complex[] result = fft.transform(preFFT, TransformType.FORWARD);
         Double[] Fres=new Double[result.length];
         Double[] zhenfus=new Double[result.length];
         StringBuilder sb=new StringBuilder();
-        double maxzhenfu=0;
+        double rangeSum=0;
         double MaxSoundFre=0;
         double AllZhenfu=0;
         for(int i=0;i<AudioActivity.fftNumOfDrawPoints;i++){
@@ -68,26 +74,38 @@ public class FFT{
                 zhenfus[i]=zhenfus[i]/(result.length/2);
             }
             zhenfus[i]=20*Math.log10(zhenfus[i]);
-            if (zhenfus[i]>maxzhenfu){
-                maxzhenfu=zhenfus[i];
+            if (i>0 && zhenfus[i]>rangeSum){//不使用第一个元素
+                rangeSum=zhenfus[i];
                 MaxSoundFre=Fres[i];
             }else {
 
             }
-            AllZhenfu+=zhenfus[i];
+            if (Fres[i]>=49 && Fres[i]<=500) {
+                AllZhenfu+=zhenfus[i];
+                filterSampleNum++;
+            }
             hm4AllFre.put(Fres[i],zhenfus[i]);
-//            sb.append(Fres[i]+","+zhenfus[i]+","+result[i].getReal()+","+result[i].getImaginary()
-//                    +","+preFFT[i]+","+shorts[i]+"\n");
+            sb.append(Fres[i]+","+zhenfus[i]+","+result[i].getReal()+","+result[i].getImaginary()
+                    +","+preFFT[i]+","+shorts[i]+"\n");
 //            Log.e("FFT傅里叶变换","第"+i+"个变换后频率为："+Fres[i]+"振幅："+zhenfus[i]);
 //            System.out.println("第"+i+"个变换后数据为："+result[i]);
         }
-//        FileUtils.writeLog(AudioActivity.path+"/voice-" + new Date().getTime()+".csv",sb.toString());
-//        if (MaxSoundFre>(0.9*(AllZhenfu/AudioActivity.fftNumOfDrawPoints))) {
-//            res.add(MaxSoundFre);
-//        }else {
-//            res.add(-0.1);
-//        }
-        res.add(MaxSoundFre);
+        FileUtils.writeLog(AudioActivity.path+"/voice-" + new Date().getTime()+".csv",sb.toString());
+        /**
+         * 过滤
+         * */
+        double thisAvg=AllZhenfu/filterSampleNum;
+        if (rangeSum>45) {
+            res.add(MaxSoundFre);
+        }else {
+            res.add(-0.1);
+        }
+        preAvg=thisAvg;
+        /**
+         * 不过滤
+         * */
+//        res.add(MaxSoundFre);
+
         res.add(hm4AllFre);
         return res;
     }
@@ -172,5 +190,29 @@ public class FFT{
 //            value |= ((long) (arr[i] & 0xff)) << (8 * i);
 //        }
         return res;
+    }
+    public static int getUnsignedByte (byte data){      //将data字节型数据转换为0~255 (0xFF 即BYTE)。
+        return data&0x0FF;
+    }
+    public static int getUnsignedShort(short data){
+        return data&0xFFFF;
+    }
+    public static long getUnsignedInt(int data){
+        return data&0xFFFFFF;
+    }
+    public static int toUnsignedInt(short x) {
+        return ((int) x) & 0xffff;
+    }
+
+
+    public static short reverseByBit(short x) {
+        short temp=0;
+        for (int i = 0; i < 8; i ++)
+        {
+            temp = (short) (temp << 1);
+            temp |= (x >> i) & 0x01;
+        }
+
+        return temp;
     }
 }

@@ -6,6 +6,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
@@ -19,11 +20,15 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.charts.ScatterChart;
+import com.github.mikephil.charting.components.Description;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.data.ScatterData;
+import com.github.mikephil.charting.data.ScatterDataSet;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -38,7 +43,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import top.khora.voiceanalyzer.Util.DetailScatterChart;
 import top.khora.voiceanalyzer.Util.FFT;
+
+import static top.khora.voiceanalyzer.R.color.*;
 
 public class AudioActivity extends AppCompatActivity implements View.OnClickListener {
     private static String TAG="AudioActivity";
@@ -50,7 +58,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private Button btn_analy;
     private Button btn_set;
     private LineChart chart_fft;
-    private LineChart chart_voice;
+    private DetailScatterChart chart_voice;
 
     public static int sampleRate=8192;
     public static int fftNum=4096;//根据fft方法的原理需要为2的整数幂
@@ -121,7 +129,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                     Toast toast=Toast.makeText(this,null,Toast.LENGTH_SHORT);
                     toast.setText("录音未授权，无法正常使用该应用");
                     toast.show();
-                    //-TODO 延迟关闭应用
+                    //-TODO 设置新的界面能够让用户重启主动开启对应权限
                 }
 
             }
@@ -151,6 +159,10 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 linearLayout2.setVisibility(View.GONE);
                 linearLayout3.setVisibility(View.GONE);
                 linearLayout4.setVisibility(View.GONE);
+                btn_fre.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor_selected));
+                btn_fft.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor));
+                btn_analy.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor));
+                btn_set.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor));
                 pageNow=PAGE_1;
                 break;
             case 2:
@@ -158,6 +170,10 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 linearLayout2.setVisibility(View.VISIBLE);
                 linearLayout3.setVisibility(View.GONE);
                 linearLayout4.setVisibility(View.GONE);
+                btn_fre.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor));
+                btn_fft.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor_selected));
+                btn_analy.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor));
+                btn_set.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor));
                 pageNow=PAGE_2;
                 break;
             case 3:
@@ -165,6 +181,10 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 linearLayout2.setVisibility(View.GONE);
                 linearLayout3.setVisibility(View.VISIBLE);
                 linearLayout4.setVisibility(View.GONE);
+                btn_fre.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor));
+                btn_fft.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor));
+                btn_analy.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor_selected));
+                btn_set.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor));
                 pageNow=PAGE_3;
                 break;
             case 4:
@@ -172,6 +192,10 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 linearLayout2.setVisibility(View.GONE);
                 linearLayout3.setVisibility(View.GONE);
                 linearLayout4.setVisibility(View.VISIBLE);
+                btn_fre.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor));
+                btn_fft.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor));
+                btn_analy.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor));
+                btn_set.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor_selected));
                 pageNow=PAGE_4;
                 break;
 
@@ -204,7 +228,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     /**
      * 图表更新
      * */
-    protected void updateChartFre(HashMap hashMap){
+    protected void updateChartFFTResult(HashMap hashMap){
         if (chart_fft==null){
             Log.e(TAG, "updateChartFre: 未找到所需的chart_fft对象");
             return;
@@ -217,11 +241,17 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                     ,Float.valueOf(String.valueOf(HMentry.getValue())));
             entries.add(entry);
         }
-        LineDataSet dataSet = new LineDataSet(entries, "Label"); // add entries to dataset
-        dataSet.setColor(R.color.testChart1);
-        dataSet.setValueTextColor(R.color.testChart1); // styling, ...
-        LineData lineData = new LineData(dataSet);
-        chart_fft.setData(lineData);
+        LineDataSet dataSet = new LineDataSet(entries, "频率分量"); // add entries to dataset
+//        dataSet.setColor(R.color.testChart1);
+//        dataSet.setValueTextColor(R.color.testChart1); // styling, ...
+        LineData scatterData = new LineData(dataSet);
+        chart_fft.setData(scatterData);
+
+        //移除默认描述
+        Description desc=new Description();
+        desc.setText("");
+        chart_fft.setDescription(desc);
+
         XAxis xAxis= chart_fft.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setAxisMaximum(2500);
@@ -252,21 +282,51 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
             entries.add(entry);
         }
 
-        LineDataSet dataSet = new LineDataSet(entries, "Label"); // add entries to dataset
-        dataSet.setColor(R.color.testChart1);
-        dataSet.setValueTextColor(R.color.testChart1); // styling, ...
-        LineData lineData = new LineData(dataSet);
-        chart_voice.setData(lineData);
+
+        ScatterDataSet scatterDataSet = new ScatterDataSet(entries, "人声频率点"); // add entries to dataset
+        scatterDataSet.setScatterShape(ScatterChart.ScatterShape.CIRCLE);
+        scatterDataSet.setColor(ContextCompat.getColor(this,R.color.scatter_point));
+        scatterDataSet.setValueTextColor(ContextCompat.getColor(this,R.color.scatter_point_text));
+        //注：R.color.xxx为类型color.xml中对应颜色的index
+
+
+//        scatterDataSet.setColors(new int[]{R.color.gender_female,R.color.gender_male},this);
+//        scatterDataSet.setValueTextColors(new int[]{R.color.gender_female,R.color.gender_male},this);
+
+        ScatterData scatterData = new ScatterData(scatterDataSet);
+        chart_voice.setData(scatterData);
+        chart_voice.setScaleXEnabled(false);
+        chart_voice.setScaleYEnabled(false);
+        //移除默认描述
+        Description desc=new Description();
+        desc.setText("");
+        chart_voice.setDescription(desc);
+
+
+
+        XAxis xAxis= chart_voice.getXAxis();
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setEnabled(false);
+        xAxis.setDrawAxisLine(false);//隐藏内部网格
 
         YAxis yAxis= chart_voice.getAxisLeft();
         yAxis.setAxisMaximum(500);
         yAxis.setAxisMinimum(0);
+        yAxis.setLabelCount(11);
         YAxis yAxis2= chart_voice.getAxisRight();
         yAxis2.setAxisMaximum(500);
         yAxis2.setAxisMinimum(0);
+        yAxis2.setLabelCount(11);
+        yAxis.setDrawAxisLine(false);
+        yAxis2.setDrawAxisLine(false);
+
+
+
 
         chart_voice.invalidate(); // refresh
+
     }
+
 
     /**
      * 一、初始化获取每一帧流的Size
@@ -328,6 +388,15 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
          * 第四个参数audioFormat 音频格式  表示音频数据的格式。  与前面初始化获取每一帧流的Size保持一致
          * 第五个参数缓存区大小,就是上面我们配置的AudioRecord.getMinBufferSize
          * */
+        /**
+         * ENCODING_PCM_16BIT
+         * Added in API level 3
+         * public static final int ENCODING_PCM_16BIT
+         * Audio data format: PCM 16 bit per sample. Guaranteed to be supported by devices.
+         *
+         * Constant Value: 2 (0x00000002)
+         * 注：已经被转成-32768~32767的数，时序图形类余弦，直接用在fft中即可
+         * */
         mAudioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC
                 , sampleRate
                 , AudioFormat.CHANNEL_IN_MONO
@@ -365,31 +434,36 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                     }
                     while (mWhetherRecord){
                         mAudioRecord.read(shorts, 0, shorts.length);//读取流
-//
-                        Log.e("BYTES--LENGTH",shorts.length+"");
+                        //注意shorts是大端模式：低在低（前），高在高（后）
+                        Log.i("BYTES--LENGTH",shorts.length+"");
                         List resList=FFT.fft(shorts);
                         double maxFre= (double) resList.get(0);
+                        double preMaxFre= (double) resList.get(0);//并不精准，使用了两次fft的均值
                         hmAllFre= (HashMap<Double, Double>) resList.get(1);
-                        Log.e(TAG,"hm大小"+hmAllFre.size());
+                        Log.d(TAG,"hm大小"+hmAllFre.size());
+                        Log.d(TAG,"最大响度的频率："+maxFre);
                         if (maxFre>=49 && maxFre<=500) {//过滤
-                            Log.e(TAG,"最大响度的频率："+maxFre);
                             if (VoiceFreDeque.size()>=80) {
                                 VoiceFreDeque.pop();
                             }
-                            VoiceFreDeque.add((float) maxFre);
+                            if ((maxFre+preMaxFre)/2>=49 && (maxFre+preMaxFre)/2<=500){
+                                VoiceFreDeque.add((float) (maxFre+preMaxFre)/2);
+                            }
+//                            VoiceFreDeque.add((float) maxFre);
                         }else {
                             if (VoiceFreDeque.size()>=80) {
                                 VoiceFreDeque.pop();
                             }
                             VoiceFreDeque.add((float) 0);
                         }
+                        preMaxFre=maxFre;
 
                         if (pageNow==PAGE_1) {
                             updateChartVoice(VoiceFreDeque);//时间-主频率图
                         }
 
                         if (pageNow==PAGE_2) {
-                            updateChartFre(hmAllFre);//某次fft的频谱图
+                            updateChartFFTResult(hmAllFre);//某次fft的频谱图
                         }
 
 //                        while (count*128<bytes.length) {

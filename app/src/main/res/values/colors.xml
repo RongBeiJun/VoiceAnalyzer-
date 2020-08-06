@@ -1,9 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="colorPrimary">#6200EE</color>
-    <color name="colorPrimaryDark">#3700B3</color>
+    <color name="colorPrimaryDark">#3700B3</color> ,,
     <color name="colorAccent">#03DAC5</color>
     <color name="launch_blue">#4CA5CD</color>
-    <color name="testChart1">#684CCD</color>
+    <color name="mainActivity_background">#B6B6B6</color>
+    <color name="testChart1">#FFC107</color>
     <color name="testChart2">#9C4CCD</color>
+    <color name="gender_male">#5ACDF9</color>
+    <color name="gender_female">#DAB8D0</color>
+    <color name="scatter_point">#F44336</color>
+    <color name="scatter_point_text">#673AB7</color>
+    <color name="bottom_btn_background">#69A5FF</color>
+    <color name="bottom_btn_textColor">#FFFFFF</color>
+    <color name="bottom_btn_textColor_selected">#CB000000</color>
 </resources>
