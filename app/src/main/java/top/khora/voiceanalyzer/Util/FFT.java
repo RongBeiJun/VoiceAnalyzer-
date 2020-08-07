@@ -85,12 +85,12 @@ public class FFT{
                 filterSampleNum++;
             }
             hm4AllFre.put(Fres[i],zhenfus[i]);
-            sb.append(Fres[i]+","+zhenfus[i]+","+result[i].getReal()+","+result[i].getImaginary()
-                    +","+preFFT[i]+","+shorts[i]+"\n");
+//            sb.append(Fres[i]+","+zhenfus[i]+","+result[i].getReal()+","+result[i].getImaginary()
+//                    +","+preFFT[i]+","+shorts[i]+"\n");
 //            Log.e("FFT傅里叶变换","第"+i+"个变换后频率为："+Fres[i]+"振幅："+zhenfus[i]);
 //            System.out.println("第"+i+"个变换后数据为："+result[i]);
         }
-        FileUtils.writeLog(AudioActivity.path+"/voice-" + new Date().getTime()+".csv",sb.toString());
+//        FileUtils.writeLog(AudioActivity.path+"/voice-" + new Date().getTime()+".csv",sb.toString());
         /**
          * 过滤
          * */

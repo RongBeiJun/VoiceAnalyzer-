@@ -6,13 +6,17 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
+import android.media.AudioAttributes;
 import android.media.AudioFormat;
+import android.media.AudioManager;
 import android.media.AudioRecord;
+import android.media.AudioTrack;
 import android.media.MediaRecorder;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -31,11 +35,13 @@ import com.github.mikephil.charting.data.ScatterData;
 import com.github.mikephil.charting.data.ScatterDataSet;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
@@ -57,6 +63,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private Button btn_fft;
     private Button btn_analy;
     private Button btn_set;
+    private Button btn_replay;
     private LineChart chart_fft;
     private DetailScatterChart chart_voice;
 
@@ -74,6 +81,9 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private static final int PAGE_3=3;
     private static final int PAGE_4=4;
     private int pageNow=1;
+    private AudioTrack mAudioTrack;
+    private int replayTime=5000;
+    private File pcmFileReplay;
 
 
     @Override
@@ -142,6 +152,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private void initial_before(){
         btn_open = findViewById(R.id.audio_act_btn_open);
         btn_stop = findViewById(R.id.audio_act_btn_stop);
+        btn_replay = findViewById(R.id.audio_act_btn_replay);
         btn_fre = findViewById(R.id.audio_act_btn_page_fre);
         btn_fft = findViewById(R.id.audio_act_btn_page_fft);
         btn_analy = findViewById(R.id.audio_act_btn_page_anlay);
@@ -220,6 +231,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private void initial_after(){
         btn_open.setOnClickListener(this);
         btn_stop.setOnClickListener(this);
+        btn_replay.setOnClickListener(this);
         btn_fre.setOnClickListener(this);
         btn_fft.setOnClickListener(this);
         btn_analy.setOnClickListener(this);
@@ -411,20 +423,26 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private String fname;
 //    byte[] bytes = new byte[fftNum];
     short[] shorts = new short[fftNum/2];
+    short[] shortsForreplay = new short[fftNum/2];
 
     private void startRecord(){
         Log.i(TAG,"---startRecord---");
         fname= String.valueOf(new Date().getTime());
-        pcmFile = new File(AudioActivity.this.getExternalCacheDir().getPath(),"audioRecord"+fname+".pcm");
+        pcmFile = new File(AudioActivity.this.getExternalCacheDir().getPath(),
+                "audioRecord"+fname+".pcm");
+        pcmFileReplay = new File(AudioActivity.this.getExternalCacheDir().getPath(),
+                "audioRecordReplay.pcm");
         mWhetherRecord = true;
         new Thread(new Runnable() {
             @Override
             public void run() {
                 mAudioRecord.startRecording();//开始录制
                 FileOutputStream fileOutputStream = null;
+                FileOutputStream fileOutputStreamReplay = null;
                 try {
 //                    audioHandler.post(fftRunnable);
                     fileOutputStream = new FileOutputStream(pcmFile);
+                    fileOutputStreamReplay = new FileOutputStream(pcmFileReplay);
 //                    bytes = new byte[fftNum];//16位即2比特一个数值，所以fft计算点为该大小/2
                     shorts=new short[fftNum/2];
                     HashMap<Double,Double> hmAllFre;
@@ -434,6 +452,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                     }
                     while (mWhetherRecord){
                         mAudioRecord.read(shorts, 0, shorts.length);//读取流
+                        shortsForreplay=Arrays.copyOf(shorts,shorts.length);
                         //注意shorts是大端模式：低在低（前），高在高（后）
                         Log.i("BYTES--LENGTH",shorts.length+"");
                         List resList=FFT.fft(shorts);
@@ -472,9 +491,13 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
 //                        }
                         fileOutputStream.write(short2byte(shorts));
                         fileOutputStream.flush();
+                        fileOutputStreamReplay.write(short2byte(shortsForreplay));
+                        fileOutputStreamReplay.flush();
                     }
                     Log.e(TAG, "run: 暂停录制" );
                     mAudioRecord.stop();//停止录制
+                    fileOutputStreamReplay.flush();
+                    fileOutputStreamReplay.close();
                     fileOutputStream.flush();
                     fileOutputStream.close();
                     addHeadData();//添加音频头部信息并且转成wav格式
@@ -504,6 +527,9 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         File handlerWavFile = new File(AudioActivity.this.getExternalCacheDir().getPath(),"audioRecord_handler"+fname+".wav");
         PcmToWavUtil pcmToWavUtil = new PcmToWavUtil(sampleRate,AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT);
         pcmToWavUtil.pcmToWav(pcmFile.toString(),handlerWavFile.toString());
+
+//        File handlerWavFileReplay = new File(AudioActivity.this.getExternalCacheDir().getPath(),"audioRecordReplay_handler.wav");
+//        pcmToWavUtil.pcmToWav(pcmFileReplay.toString(),handlerWavFileReplay.toString());
     }
     /**
      * 释放AudioRecord,录制流程完毕
@@ -512,6 +538,73 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private void releaseAR(){
         Log.i(TAG,"---releaseAR---");
         mAudioRecord.release();
+    }
+    /**
+     * 回放功能
+     * */
+    private void replay(){
+        Log.i(TAG+"-replay","---replay---");
+        stopRecord();//暂停录音
+        mAudioTrack = new AudioTrack(
+                new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build(),
+                new AudioFormat.Builder()
+                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                        .setSampleRate(sampleRate)
+                        .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                        .build(),
+                mRecordBufferSize,
+                AudioTrack.MODE_STREAM,
+                AudioManager.AUDIO_SESSION_ID_GENERATE);   //创建AudioTrack对象
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if(mAudioTrack!=null){
+                    mAudioTrack.play();   //开始播放，此时播放的数据为空
+
+                    if(pcmFile!=null){
+                        Log.i(TAG+"-replay","pcmFile非空");
+                        short[] tempShortBuffer;
+                        byte[] tempByteBuffer = new byte[mRecordBufferSize*2];
+                        try {
+                            FileInputStream fis=new FileInputStream(pcmFileReplay);
+                            if (fis.available() > 0){
+                                Log.i(TAG+"-replay","FileInputStream可获取");
+                                int read=0;
+                                while ((read = fis.read(tempByteBuffer))!= -1 ){
+                                    if(read == AudioTrack.ERROR_INVALID_OPERATION ||
+                                            read == AudioTrack.ERROR_BAD_VALUE ||
+                                            read ==AudioTrack.ERROR) {
+                                        Log.e(TAG+"-Replay","写入pcm出错");
+                                        continue;
+                                    }else{
+//                                        Log.i(TAG+"-replay","read："+read);
+                                        tempShortBuffer=byteArray2ShortArray(tempByteBuffer);
+                                        mAudioTrack.write(tempShortBuffer,0,tempShortBuffer.length);  //将读取的数据写入到AudioTrack里面
+                                    }
+                                }
+
+                            }
+
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        }catch (IOException e) {
+                            e.printStackTrace();
+                        }finally {
+                            mAudioTrack.stop();
+                            mAudioTrack.release();
+                            Message msg=new Message();
+                            msg.what=REOPEN_RECORD;
+                            audioHandler.sendMessageDelayed(msg,500);
+                        }
+                    }
+                }
+            }
+        }).start();
+
     }
 
     //convert short to byte
@@ -525,43 +618,33 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         }
         return bytes;
     }
+    public short[] byteArray2ShortArray(byte[] data) {
+        short[] retVal = new short[data.length/2];
+        for (int i = 0; i < retVal.length; i++)
+            retVal[i] = (short) ((data[i * 2] & 0xff) | (data[i * 2 + 1] & 0xff) << 8);
+
+        return retVal;
+    }
 
     /**
-     * 暂时未用
+     * handler
+     * 之后可以用any重写
      * */
-    Runnable fftRunnable=new Runnable() {
+    private static final int REOPEN_RECORD=1;
+    Handler audioHandler=new Handler(){
         @Override
-        public void run() {
-//            byte[] bytes = new byte[fftNum];//16位即2比特一个数值，所以fft计算点为该大小/2
-            HashMap<Double,Double> hmAllFre;
-            ArrayDeque<Float> VoiceFreDeque=new ArrayDeque<>(80);
-//            mAudioRecord.read(bytes, 0, bytes.length);//读取流
-            List resList=FFT.fft(shorts);
-            double maxFre= (double) resList.get(0);
-            hmAllFre= (HashMap<Double, Double>) resList.get(1);
-            Log.e(TAG,"hm大小"+hmAllFre.size());
-            if (maxFre>=49 && maxFre<=500) {//过滤
-                Log.e(TAG,"最大响度的频率："+maxFre);
-                if (VoiceFreDeque.size()>=80) {
-                    VoiceFreDeque.pop();
-                }
-                VoiceFreDeque.add((float) maxFre);
-            }else {
-                if (VoiceFreDeque.size()>=80) {
-                    VoiceFreDeque.pop();
-                }
-                VoiceFreDeque.add((float) 0);
+        public void handleMessage(@NonNull Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what){
+                case REOPEN_RECORD:
+                    Log.i(TAG+"handlerMessage","重开录音");
+                    initAudioRecord();
+                    startRecord();//-TODO 加判断防止开启时也执行
+                    break;
             }
 
-            updateChartVoice(VoiceFreDeque);//时间-主频率图
-
-//            updateChartFre(hmAllFre);//某次fft的频谱图
-            if (mWhetherRecord) {
-                audioHandler.postDelayed(fftRunnable,40);
-            }
         }
     };
-    Handler audioHandler=new Handler();
 
     @Override
     public void onClick(View v) {
@@ -575,6 +658,10 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 Log.i(TAG,"停止录音");
                 stopRecord();
                 releaseAR();
+                break;
+            case R.id.audio_act_btn_replay:
+                Log.i(TAG,"重播录音");
+                replay();
                 break;
             case R.id.audio_act_btn_page_fre:
                 Log.i(TAG,"频率页");
