@@ -21,6 +21,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.LineChart;
@@ -56,7 +57,7 @@ import static top.khora.voiceanalyzer.R.color.*;
 
 public class AudioActivity extends AppCompatActivity implements View.OnClickListener {
     private static String TAG="AudioActivity";
-    public static String path;
+    public static String path;//暂时给FFT用来写测试数据
     private Button btn_open;
     private Button btn_stop;
     private Button btn_fre;
@@ -64,6 +65,9 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private Button btn_analy;
     private Button btn_set;
     private Button btn_replay;
+    private Button btn_analy_reflesh;
+    private Button btn_analy_toggle;
+    private TextView tv_analy_article;
     private LineChart chart_fft;
     private DetailScatterChart chart_voice;
 
@@ -83,7 +87,6 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private int pageNow=1;
     private AudioTrack mAudioTrack;
     private int replayTime=5000;
-    private File pcmFileReplay;
 
 
     @Override
@@ -93,13 +96,14 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         path=getExternalFilesDir("").getPath();
         checkAuth();
 
+        initMinBufferSize();
+        initAudioRecord();
+        startRecord();
+
         initial_before();
         initial1();
         initial_after();
 
-        initMinBufferSize();
-        initAudioRecord();
-        startRecord();
 
     }
     private static final int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
@@ -157,6 +161,9 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         btn_fft = findViewById(R.id.audio_act_btn_page_fft);
         btn_analy = findViewById(R.id.audio_act_btn_page_anlay);
         btn_set = findViewById(R.id.audio_act_btn_page_set);
+        btn_analy_reflesh=findViewById(R.id.analy_reflesh_article_btn);
+        btn_analy_toggle=findViewById(R.id.analy_toggle_btn);
+        tv_analy_article=findViewById(R.id.analy_article_tv);
         linearLayout1 = findViewById(R.id.linearlayout_1);
         linearLayout2 = findViewById(R.id.linearlayout_2);
         linearLayout3 = findViewById(R.id.linearlayout_3);
@@ -215,13 +222,28 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private void initial1(){
         switchLayout(1);
         chart_voice = findViewById(R.id.chart_voice);
+        if (!mWhetherRecord) {
+            Log.i(TAG+"initial1","切换到fre页面必须进入播放运行");
+            initAudioRecord();
+            startRecord();
+        }
     }
     private void initial2(){
         switchLayout(2);
         chart_fft = findViewById(R.id.chart_fft);
+        if (!mWhetherRecord) {
+            Log.i(TAG+"initial2","切换到fft页面必须进入播放运行");
+            initAudioRecord();
+            startRecord();
+        }
     }
     private void initial3(){
         switchLayout(3);
+        if (mWhetherRecord) {
+            Log.i(TAG+"initial3","播放运行中,切换到分析页面需要断开");
+            stopRecord();
+        }
+        //-TODO toggle状态还原
 
     }
     private void initial4(){
@@ -236,6 +258,8 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         btn_fft.setOnClickListener(this);
         btn_analy.setOnClickListener(this);
         btn_set.setOnClickListener(this);
+        btn_analy_reflesh.setOnClickListener(this);
+        btn_analy_toggle.setOnClickListener(this);
     }
     /**
      * 图表更新
@@ -254,8 +278,13 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
             entries.add(entry);
         }
         LineDataSet dataSet = new LineDataSet(entries, "频率分量"); // add entries to dataset
-//        dataSet.setColor(R.color.testChart1);
-//        dataSet.setValueTextColor(R.color.testChart1); // styling, ...
+        dataSet.setColor(ContextCompat.getColor(this,R.color.testChart2));
+        dataSet.setCircleColor(ContextCompat.getColor(this,R.color.testChart2));
+        dataSet.setValueTextColor(ContextCompat.getColor(this,R.color.testChart1)); // styling, ...
+        dataSet.setDrawCircleHole(false);
+        dataSet.setDrawCircles(false);
+        dataSet.setDrawFilled(false);
+        dataSet.setDrawValues(false);
         LineData scatterData = new LineData(dataSet);
         chart_fft.setData(scatterData);
 
@@ -266,7 +295,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
 
         XAxis xAxis= chart_fft.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setAxisMaximum(2500);
+        xAxis.setAxisMaximum(2400);
         xAxis.setAxisMinimum(20);
 
         YAxis yAxis= chart_fft.getAxisLeft();
@@ -424,6 +453,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
 //    byte[] bytes = new byte[fftNum];
     short[] shorts = new short[fftNum/2];
     short[] shortsForreplay = new short[fftNum/2];
+    private File pcmFileReplay;
 
     private void startRecord(){
         Log.i(TAG,"---startRecord---");
@@ -512,11 +542,110 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         }).start();
     }
     /**
+     * 分析用音频
+     * */
+    private boolean mWhetherRecord_Analy;
+    private File pcmFile_Analy;
+    private File pcmFileReplay_Analy;
+    private String fname_Analy;
+    //    byte[] bytes = new byte[fftNum];
+    short[] shorts_Analy = new short[fftNum/2];
+    short[] shortsForreplay_Analy = new short[fftNum/2];
+    private void startRecordAnaly(){
+        Log.i(TAG,"---startRecordAnaly---");
+        fname_Analy= String.valueOf(new Date().getTime());
+        pcmFile_Analy = new File(AudioActivity.this.getExternalCacheDir().getPath(),
+                "audioRecordAnaly"+fname_Analy+".pcm");
+        pcmFileReplay_Analy = new File(AudioActivity.this.getExternalCacheDir().getPath(),
+                "audioRecordReplayAnaly.pcm");
+        mWhetherRecord_Analy = true;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                mAudioRecord.startRecording();//开始录制
+                FileOutputStream fileOutputStream = null;
+                FileOutputStream fileOutputStreamReplay = null;
+                try {
+//                    audioHandler.post(fftRunnable);
+                    fileOutputStream = new FileOutputStream(pcmFile_Analy);
+                    fileOutputStreamReplay = new FileOutputStream(pcmFileReplay_Analy);
+//                    bytes = new byte[fftNum];//16位即2比特一个数值，所以fft计算点为该大小/2
+                    shorts_Analy=new short[fftNum/2];
+                    HashMap<Double,Double> hmAllFre;
+                    ArrayDeque<Float> VoiceFreDeque=new ArrayDeque<>(80);
+                    for (int i=0;i<80;++i){
+                        VoiceFreDeque.push((float) 0);
+                    }
+                    while (mWhetherRecord_Analy){
+                        mAudioRecord.read(shorts_Analy, 0, shorts_Analy.length);//读取流
+                        shortsForreplay_Analy=Arrays.copyOf(shorts_Analy,shorts_Analy.length);
+                        //注意shorts是大端模式：低在低（前），高在高（后）
+                        Log.i("BYTES--LENGTH",shorts_Analy.length+"");
+                        List resList=FFT.fft(shorts_Analy);
+                        double maxFre= (double) resList.get(0);
+                        double preMaxFre= (double) resList.get(0);//并不精准，使用了两次fft的均值
+                        hmAllFre= (HashMap<Double, Double>) resList.get(1);
+                        Log.d(TAG,"hm大小"+hmAllFre.size());
+                        Log.d(TAG,"最大响度的频率："+maxFre);
+                        if (maxFre>=49 && maxFre<=500) {//过滤
+                            if (VoiceFreDeque.size()>=80) {
+                                VoiceFreDeque.pop();
+                            }
+                            if ((maxFre+preMaxFre)/2>=49 && (maxFre+preMaxFre)/2<=500){
+                                VoiceFreDeque.add((float) (maxFre+preMaxFre)/2);
+                            }
+//                            VoiceFreDeque.add((float) maxFre);
+                        }else {
+                            if (VoiceFreDeque.size()>=80) {
+                                VoiceFreDeque.pop();
+                            }
+                            VoiceFreDeque.add((float) 0);
+                        }
+                        preMaxFre=maxFre;
+
+//                        if (pageNow==PAGE_1) {
+//                            updateChartVoice(VoiceFreDeque);//时间-主频率图
+//                        }
+//
+//                        if (pageNow==PAGE_2) {
+//                            updateChartFFTResult(hmAllFre);//某次fft的频谱图
+//                        }
+
+//                        while (count*128<bytes.length) {
+//                            FFT.fft(Arrays.copyOfRange(bytes,count*128,(count+1)*128));
+//                            count++;
+//                        }
+                        fileOutputStream.write(short2byte(shorts_Analy));
+                        fileOutputStream.flush();
+                        fileOutputStreamReplay.write(short2byte(shortsForreplay_Analy));
+                        fileOutputStreamReplay.flush();
+                    }
+                    Log.e(TAG, "run: 暂停录制" );
+                    mAudioRecord.stop();//停止录制
+                    fileOutputStreamReplay.flush();
+                    fileOutputStreamReplay.close();
+                    fileOutputStream.flush();
+                    fileOutputStream.close();
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                    mAudioRecord.stop();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }).start();
+    }
+    /**
      * 停止录制
      * */
     private void stopRecord(){
         Log.i(TAG,"---stopRecord---");
         mWhetherRecord = false;
+    }
+    private void stopRecordAnaly(){
+        Log.i(TAG,"---stopRecordAnaly---");
+        mWhetherRecord_Analy = false;
     }
     /**
      * 给音频文件添加头部信息,并且转换格式成wav
@@ -542,7 +671,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     /**
      * 回放功能
      * */
-    private void replay(){
+    private void replay(final int replayTime){//输入单位为秒，播放最近的少于等于replayTime的音频
         Log.i(TAG+"-replay","---replay---");
         stopRecord();//暂停录音
         mAudioTrack = new AudioTrack(
@@ -569,8 +698,10 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                         Log.i(TAG+"-replay","pcmFile非空");
                         short[] tempShortBuffer;
                         byte[] tempByteBuffer = new byte[mRecordBufferSize*2];
+//                        byte[] tempByteBuffer = new byte[replayTime*sampleRate*2];
                         try {
-                            FileInputStream fis=new FileInputStream(pcmFileReplay);
+//                            FileInputStream fis=new FileInputStream(pcmFileReplay);
+                            FileInputStream fis=new FileInputStream(pcmFile);
                             if (fis.available() > 0){
                                 Log.i(TAG+"-replay","FileInputStream可获取");
                                 int read=0;
@@ -583,7 +714,9 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                                     }else{
 //                                        Log.i(TAG+"-replay","read："+read);
                                         tempShortBuffer=byteArray2ShortArray(tempByteBuffer);
-                                        mAudioTrack.write(tempShortBuffer,0,tempShortBuffer.length);  //将读取的数据写入到AudioTrack里面
+                                        if (fis.available()<replayTime*sampleRate*2) {
+                                            mAudioTrack.write(tempShortBuffer,0,tempShortBuffer.length);  //将读取的数据写入到AudioTrack里面
+                                        }
                                     }
                                 }
 
@@ -594,6 +727,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                         }catch (IOException e) {
                             e.printStackTrace();
                         }finally {
+
                             mAudioTrack.stop();
                             mAudioTrack.release();
                             Message msg=new Message();
@@ -661,7 +795,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 break;
             case R.id.audio_act_btn_replay:
                 Log.i(TAG,"重播录音");
-                replay();
+                replay(5);//-TODO 重播时间
                 break;
             case R.id.audio_act_btn_page_fre:
                 Log.i(TAG,"频率页");
@@ -675,6 +809,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 break;
             case R.id.audio_act_btn_page_anlay:
                 Log.i(TAG,"分析页");
+                initial3();
 
                 break;
             case R.id.audio_act_btn_page_set:

@@ -5,8 +5,8 @@
     <color name="colorAccent">#03DAC5</color>
     <color name="launch_blue">#4CA5CD</color>
     <color name="mainActivity_background">#B6B6B6</color>
-    <color name="testChart1">#FFC107</color>
-    <color name="testChart2">#9C4CCD</color>
+    <color name="testChart1">#3F51B5</color>
+    <color name="testChart2">#AA0961</color>
     <color name="gender_male">#5ACDF9</color>
     <color name="gender_female">#DAB8D0</color>
     <color name="scatter_point">#F44336</color>
