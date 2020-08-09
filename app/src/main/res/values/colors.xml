@@ -14,4 +14,5 @@
     <color name="bottom_btn_background">#69A5FF</color>
     <color name="bottom_btn_textColor">#FFFFFF</color>
     <color name="bottom_btn_textColor_selected">#CB000000</color>
+    <color name="analy_botton_background">#E1F5FE</color>
 </resources>

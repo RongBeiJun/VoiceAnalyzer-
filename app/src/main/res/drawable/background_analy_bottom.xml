@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/analy_botton_background"/>
+    <gradient android:startColor="@color/gender_female"
+        android:endColor="@color/gender_male"
+        android:centerColor="#ffffff"
+        android:type="linear"
+        />
+    <stroke android:width="0.5dip"
+        android:color="#656565"
+        />
+    <corners android:topLeftRadius="60dp"
+        android:topRightRadius="60dp"
+        />
+
+</shape>

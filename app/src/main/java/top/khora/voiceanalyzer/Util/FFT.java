@@ -126,7 +126,7 @@ public class FFT{
         double[] pcmAsDoubles = doubleMe(out);
         return pcmAsDoubles;
 //        double[] doubleArray=new double[byteArray.length/2];
-//        // TODO Auto-generated method stub
+//
 //        for (int i = 0; i < doubleArray.length; i++) {
 //            byte bl = byteArray[2 * i];
 //            byte bh = byteArray[2 * i + 1];

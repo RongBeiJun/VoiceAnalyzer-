@@ -6,6 +6,8 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
@@ -40,6 +42,10 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,6 +56,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import top.khora.voiceanalyzer.Util.AssetsUtil;
 import top.khora.voiceanalyzer.Util.DetailScatterChart;
 import top.khora.voiceanalyzer.Util.FFT;
 
@@ -88,6 +95,8 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private AudioTrack mAudioTrack;
     private int replayTime=5000;
 
+    String articleTest;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,6 +112,8 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         initial_before();
         initial1();
         initial_after();
+
+        articleTest= AssetsUtil.getAssetsToString(this,"article");
 
 
     }
@@ -143,7 +154,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                     Toast toast=Toast.makeText(this,null,Toast.LENGTH_SHORT);
                     toast.setText("录音未授权，无法正常使用该应用");
                     toast.show();
-                    //-TODO 设置新的界面能够让用户重启主动开启对应权限
+                    //-TODO 设置新的界面能够让用户重启主动开启对应权限,需要进行测试
                 }
 
             }
@@ -243,7 +254,10 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
             Log.i(TAG+"initial3","播放运行中,切换到分析页面需要断开");
             stopRecord();
         }
-        //-TODO toggle状态还原
+        tv_analy_article.setText(articleTest);
+        //-TODO toggle状态还原 -Finished
+        STATUS_analy_toggle_btn=0;
+        btn_analy_toggle.setText("录制");
 
     }
     private void initial4(){
@@ -780,22 +794,23 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         }
     };
 
+    private static int STATUS_analy_toggle_btn=0;//0时需要显示为播放，1时需要显示为停止并分析
     @Override
     public void onClick(View v) {
         switch (v.getId()){
             case R.id.audio_act_btn_open:
-                Log.i(TAG,"开始录音");
+                Log.i(TAG,"开始录音-testBtn");
                 initAudioRecord();
                 startRecord();
                 break;
             case R.id.audio_act_btn_stop:
-                Log.i(TAG,"停止录音");
+                Log.i(TAG,"停止录音-testBtn");
                 stopRecord();
                 releaseAR();
                 break;
             case R.id.audio_act_btn_replay:
-                Log.i(TAG,"重播录音");
-                replay(5);//-TODO 重播时间
+                Log.i(TAG,"重播录音-testBtn");
+                replay(replayTime/1000);//-TODO 重播时间 -Finished
                 break;
             case R.id.audio_act_btn_page_fre:
                 Log.i(TAG,"频率页");
@@ -816,7 +831,29 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 Log.i(TAG,"设置页");
 
                 break;
+            case R.id.analy_reflesh_article_btn:
+                Log.i(TAG,"分析页刷新文章");
+
+                break;
+            case R.id.analy_toggle_btn:
+                Log.i(TAG,"分析页Toggle");
+                if (STATUS_analy_toggle_btn==0) {
+                    //-TODO 需要判断时间，太短则禁止并Toast
+                    STATUS_analy_toggle_btn=1;
+                    btn_analy_toggle.setText("分析");
+                    initAudioRecord();
+                    startRecordAnaly();
+                }else {
+                    STATUS_analy_toggle_btn=0;
+                    btn_analy_toggle.setText("录制");
+                    stopRecordAnaly();
+                    //-TODO 分析并展示
+                    startActivity(new Intent(AudioActivity.this
+                            ,ResultPageActivity.class));
+                }
+                break;
 
         }
     }
+
 }
