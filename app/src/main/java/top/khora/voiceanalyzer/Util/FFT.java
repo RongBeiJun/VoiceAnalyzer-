@@ -9,6 +9,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import top.khora.voiceanalyzer.AudioActivity;
@@ -44,7 +45,7 @@ public class FFT{
     public static List fft(short[] shorts) {
         filterSampleNum=0;
         List res=new ArrayList();
-        HashMap<Double,Double> hm4AllFre=new HashMap<>();
+        LinkedHashMap<Double,Double> hm4AllFre=new LinkedHashMap<>();
         //创建傅里叶方法实例
         FastFourierTransformer fft = new FastFourierTransformer(DftNormalization.STANDARD);
         double[] preFFT=new double[shorts.length];

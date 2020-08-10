@@ -53,12 +53,14 @@ import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import top.khora.voiceanalyzer.Util.AssetsUtil;
 import top.khora.voiceanalyzer.Util.DetailScatterChart;
 import top.khora.voiceanalyzer.Util.FFT;
+import top.khora.voiceanalyzer.Util.FileUtils;
 
 import static top.khora.voiceanalyzer.R.color.*;
 
@@ -97,6 +99,33 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
 
     String articleTest;
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        //-TODO 应该在子线程中运行
+        new Thread(){
+            @Override
+            public void run() {
+                super.run();
+                List<String> allFileNameInExternalFileFold =
+                        FileUtils.getAllFileNameInFold(getExternalFilesDir("").getPath());
+                for (int i=0;i<allFileNameInExternalFileFold.size();++i){
+                    File file=new File(allFileNameInExternalFileFold.get(i));
+                    Boolean isdeleted=file.delete();
+                    Log.d(TAG+"-onStart","删除外部文件："+allFileNameInExternalFileFold.get(i)+
+                            ":"+isdeleted);
+                }
+                List<String> allFileNameInExternalCacheFold =
+                        FileUtils.getAllFileNameInFold(getExternalCacheDir().getPath());
+                for (int i=0;i<allFileNameInExternalCacheFold.size();++i){
+                    File file=new File(allFileNameInExternalCacheFold.get(i));
+                    Boolean isdeleted=file.delete();
+                    Log.d(TAG+"-onStart","删除缓存文件："+allFileNameInExternalCacheFold.get(i)+
+                            ":"+isdeleted);
+                }
+            }
+        }.start();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -489,7 +518,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                     fileOutputStreamReplay = new FileOutputStream(pcmFileReplay);
 //                    bytes = new byte[fftNum];//16位即2比特一个数值，所以fft计算点为该大小/2
                     shorts=new short[fftNum/2];
-                    HashMap<Double,Double> hmAllFre;
+                    LinkedHashMap<Double,Double> hmAllFre;
                     ArrayDeque<Float> VoiceFreDeque=new ArrayDeque<>(80);
                     for (int i=0;i<80;++i){
                         VoiceFreDeque.push((float) 0);
@@ -502,7 +531,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                         List resList=FFT.fft(shorts);
                         double maxFre= (double) resList.get(0);
                         double preMaxFre= (double) resList.get(0);//并不精准，使用了两次fft的均值
-                        hmAllFre= (HashMap<Double, Double>) resList.get(1);
+                        hmAllFre= (LinkedHashMap<Double, Double>) resList.get(1);
                         Log.d(TAG,"hm大小"+hmAllFre.size());
                         Log.d(TAG,"最大响度的频率："+maxFre);
                         if (maxFre>=49 && maxFre<=500) {//过滤
@@ -585,7 +614,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                     fileOutputStreamReplay = new FileOutputStream(pcmFileReplay_Analy);
 //                    bytes = new byte[fftNum];//16位即2比特一个数值，所以fft计算点为该大小/2
                     shorts_Analy=new short[fftNum/2];
-                    HashMap<Double,Double> hmAllFre;
+                    LinkedHashMap<Double,Double> hmAllFre;
                     ArrayDeque<Float> VoiceFreDeque=new ArrayDeque<>(80);
                     for (int i=0;i<80;++i){
                         VoiceFreDeque.push((float) 0);
@@ -598,7 +627,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                         List resList=FFT.fft(shorts_Analy);
                         double maxFre= (double) resList.get(0);
                         double preMaxFre= (double) resList.get(0);//并不精准，使用了两次fft的均值
-                        hmAllFre= (HashMap<Double, Double>) resList.get(1);
+                        hmAllFre= (LinkedHashMap<Double, Double>) resList.get(1);
                         Log.d(TAG,"hm大小"+hmAllFre.size());
                         Log.d(TAG,"最大响度的频率："+maxFre);
                         if (maxFre>=49 && maxFre<=500) {//过滤
@@ -829,7 +858,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 break;
             case R.id.audio_act_btn_page_set:
                 Log.i(TAG,"设置页");
-
+                initial4();
                 break;
             case R.id.analy_reflesh_article_btn:
                 Log.i(TAG,"分析页刷新文章");
