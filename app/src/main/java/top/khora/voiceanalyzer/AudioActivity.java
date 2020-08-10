@@ -22,6 +22,7 @@ import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -61,10 +62,12 @@ import top.khora.voiceanalyzer.Util.AssetsUtil;
 import top.khora.voiceanalyzer.Util.DetailScatterChart;
 import top.khora.voiceanalyzer.Util.FFT;
 import top.khora.voiceanalyzer.Util.FileUtils;
+import top.khora.voiceanalyzer.Util.SharedPreferenceUtil;
 
 import static top.khora.voiceanalyzer.R.color.*;
 
-public class AudioActivity extends AppCompatActivity implements View.OnClickListener {
+public class AudioActivity extends AppCompatActivity implements View.OnClickListener,
+        View.OnFocusChangeListener {
     private static String TAG="AudioActivity";
     public static String path;//暂时给FFT用来写测试数据
     private Button btn_open;
@@ -97,6 +100,10 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private AudioTrack mAudioTrack;
     private int replayTime=5000;
 
+    private TextView tv_botton_return;
+    private EditText et_replayTime;
+    private SharedPreferenceUtil spu;
+
     String articleTest;
 
     @Override
@@ -125,6 +132,8 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 }
             }
         }.start();
+
+        spu = new SharedPreferenceUtil(this);
     }
 
     @Override
@@ -143,6 +152,16 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         initial_after();
 
         articleTest= AssetsUtil.getAssetsToString(this,"article");
+
+        new Thread(){
+            @Override
+            public void run() {
+                super.run();
+                while (spu==null) {
+                    getValueFromSPAndRendToWedgtForSetting();
+                }
+            }
+        }.start();
 
 
     }
@@ -291,6 +310,9 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     }
     private void initial4(){
         switchLayout(4);
+        et_replayTime = findViewById(R.id.et_setting_replaytime);
+        et_replayTime.setOnFocusChangeListener(this);
+        getValueFromSPAndRendToWedgtForSetting();
 
     }
     private void initial_after(){
@@ -822,6 +844,32 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
 
         }
     };
+    /**
+     * 设置页相关操作
+     * */
+    private void getValueFromSPAndRendToWedgtForSetting(){//app启动后需要执行和设置页开启后，以更新全局变量和渲染相关空间
+        if (spu==null){
+            Log.e(TAG,"未获取到spu对象");
+            return;
+        }
+        String replay_time = spu.getString("replay_time", "");
+        int replay_time_int=0;
+        if (replay_time.length()>0){
+            try {
+                replay_time_int=Integer.parseInt(replay_time);
+            } catch (NumberFormatException e) {
+                Log.e(TAG,"获取到的重播时间格式有误，不进行渲染");
+                e.printStackTrace();
+            }
+        }
+        if (replay_time_int<5 || replay_time_int>25){
+            Log.i(TAG,"获取到的重播时间获取失败或范围有误，不进行渲染");
+        }else {
+            Log.i(TAG,"渲染成功");
+            et_replayTime.setText(String.valueOf(replay_time_int));
+            replayTime=replay_time_int;
+        }
+    }
 
     private static int STATUS_analy_toggle_btn=0;//0时需要显示为播放，1时需要显示为停止并分析
     @Override
@@ -883,6 +931,32 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 break;
 
         }
+    }
+
+    @Override
+    public void onFocusChange(View v, boolean hasFocus) {
+        if (hasFocus) {
+            // 此处为得到焦点时的处理内容
+        } else {
+            // 此处为失去焦点时的处理内容
+            switch (v.getId()){
+                case R.id.et_setting_replaytime:
+                    int valueOfET=Integer.parseInt(et_replayTime.getText().toString());
+                    if (valueOfET<5 || valueOfET>25){
+                        Toast.makeText(this,"重播时间设置范围应该在5~25秒"
+                                ,Toast.LENGTH_SHORT).show();
+                        et_replayTime.setText("5");
+                    }else {
+                        spu.putString("replay_time",et_replayTime.getText().toString());
+                        Toast t=Toast.makeText(this,null
+                                ,Toast.LENGTH_SHORT);
+                        String s="设置成功，重播时间为"+et_replayTime.getText().toString()+"秒";
+                        t.setText("设置成功，重播时间为"+s);
+                    }
+                    break;
+            }
+        }
+
     }
 
 }
