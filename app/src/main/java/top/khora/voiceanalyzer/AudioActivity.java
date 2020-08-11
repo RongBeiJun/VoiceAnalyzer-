@@ -545,6 +545,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                     for (int i=0;i<80;++i){
                         VoiceFreDeque.push((float) 0);
                     }
+                    double preMaxFre=0;
                     while (mWhetherRecord){
                         mAudioRecord.read(shorts, 0, shorts.length);//读取流
                         shortsForreplay=Arrays.copyOf(shorts,shorts.length);
@@ -552,7 +553,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                         Log.i("BYTES--LENGTH",shorts.length+"");
                         List resList=FFT.fft(shorts);
                         double maxFre= (double) resList.get(0);
-                        double preMaxFre= (double) resList.get(0);//并不精准，使用了两次fft的均值
+//                        double preMaxFre= (double) resList.get(0);//并不精准，使用了两次fft的均值
                         hmAllFre= (LinkedHashMap<Double, Double>) resList.get(1);
                         Log.d(TAG,"hm大小"+hmAllFre.size());
                         Log.d(TAG,"最大响度的频率："+maxFre);
@@ -561,7 +562,11 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                                 VoiceFreDeque.pop();
                             }
                             if ((maxFre+preMaxFre)/2>=49 && (maxFre+preMaxFre)/2<=500){
-                                VoiceFreDeque.add((float) (maxFre+preMaxFre)/2);
+                                if (preMaxFre>=49 && preMaxFre<=500) {
+                                    VoiceFreDeque.add((float) (maxFre+preMaxFre)/2);
+                                }else {
+                                    VoiceFreDeque.add((float) maxFre);
+                                }
                             }
 //                            VoiceFreDeque.add((float) maxFre);
                         }else {
@@ -641,6 +646,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                     for (int i=0;i<80;++i){
                         VoiceFreDeque.push((float) 0);
                     }
+                    double preMaxFre=0;
                     while (mWhetherRecord_Analy){
                         mAudioRecord.read(shorts_Analy, 0, shorts_Analy.length);//读取流
                         shortsForreplay_Analy=Arrays.copyOf(shorts_Analy,shorts_Analy.length);
@@ -648,7 +654,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                         Log.i("BYTES--LENGTH",shorts_Analy.length+"");
                         List resList=FFT.fft(shorts_Analy);
                         double maxFre= (double) resList.get(0);
-                        double preMaxFre= (double) resList.get(0);//并不精准，使用了两次fft的均值
+//                        double preMaxFre= (double) resList.get(0);//并不精准，使用了两次fft的均值
                         hmAllFre= (LinkedHashMap<Double, Double>) resList.get(1);
                         Log.d(TAG,"hm大小"+hmAllFre.size());
                         Log.d(TAG,"最大响度的频率："+maxFre);
@@ -657,7 +663,11 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                                 VoiceFreDeque.pop();
                             }
                             if ((maxFre+preMaxFre)/2>=49 && (maxFre+preMaxFre)/2<=500){
-                                VoiceFreDeque.add((float) (maxFre+preMaxFre)/2);
+                                if (preMaxFre>=49 && preMaxFre<=500) {
+                                    VoiceFreDeque.add((float) (maxFre+preMaxFre)/2);
+                                }else {
+                                    VoiceFreDeque.add((float) maxFre);
+                                }
                             }
 //                            VoiceFreDeque.add((float) maxFre);
                         }else {
@@ -827,9 +837,11 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
 
     /**
      * handler
-     * 之后可以用any重写
+     * 之后可以用AsyncTract重写
      * */
     private static final int REOPEN_RECORD=1;
+    private static final int DISABLE_ANALY_RECORD_ANALY=2;
+    private static final int ENABLE_ANALY_RECORD_ANALY=3;
     Handler audioHandler=new Handler(){
         @Override
         public void handleMessage(@NonNull Message msg) {
@@ -839,6 +851,20 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                     Log.i(TAG+"handlerMessage","重开录音");
                     initAudioRecord();
                     startRecord();//-TODO 加判断防止开启时也执行
+                    break;
+                case DISABLE_ANALY_RECORD_ANALY:
+                    Log.i(TAG+"handlerMessage","暂时使分析页的分析按钮失效");
+                    btn_analy_toggle.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            Toast.makeText(AudioActivity.this,
+                                    "录制时间过短，请录制至少5秒再进行分析",Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    break;
+                case ENABLE_ANALY_RECORD_ANALY:
+                    Log.i(TAG+"handlerMessage","使分析页的分析按钮生效失效");
+                    btn_analy_toggle.setOnClickListener(AudioActivity.this);
                     break;
             }
 
@@ -916,6 +942,18 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 Log.i(TAG,"分析页Toggle");
                 if (STATUS_analy_toggle_btn==0) {
                     //-TODO 需要判断时间，太短则禁止并Toast
+                    new Thread(){
+                        @Override
+                        public void run() {
+                            super.run();
+                            Message msgDisable=new Message();
+                            msgDisable.what=DISABLE_ANALY_RECORD_ANALY;
+                            Message msgEnable=new Message();
+                            msgEnable.what=ENABLE_ANALY_RECORD_ANALY;
+                            audioHandler.sendMessage(msgDisable);
+                            audioHandler.sendMessageDelayed(msgEnable,5000);
+                        }
+                    }.start();
                     STATUS_analy_toggle_btn=1;
                     btn_analy_toggle.setText("分析");
                     initAudioRecord();
