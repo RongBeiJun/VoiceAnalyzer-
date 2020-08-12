@@ -50,6 +50,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
@@ -370,6 +371,9 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         yAxis2.setAxisMaximum(120);
         yAxis2.setAxisMinimum(0);
 
+        yAxis.setDrawAxisLine(false);
+        yAxis2.setDrawAxisLine(false);
+
         chart_fft.invalidate(); // refresh
 //        if (mWhetherRecord) {
 //            audioHandler.postDelayed(fftRunnable,1);
@@ -437,7 +441,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     /**
      * 一、初始化获取每一帧流的Size
      * */
-    private Integer mRecordBufferSize;
+    public static Integer mRecordBufferSize;
     private void initMinBufferSize(){
         Log.i(TAG,"---initMinBufferSize---");
         //获取每一帧的字节流大小
@@ -543,7 +547,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                     LinkedHashMap<Double,Double> hmAllFre;
                     ArrayDeque<Float> VoiceFreDeque=new ArrayDeque<>(80);
                     for (int i=0;i<80;++i){
-                        VoiceFreDeque.push((float) 0);
+                        VoiceFreDeque.add((float) 0);
                     }
                     double preMaxFre=0;
                     while (mWhetherRecord){
@@ -559,7 +563,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                         Log.d(TAG,"最大响度的频率："+maxFre);
                         if (maxFre>=49 && maxFre<=500) {//过滤
                             if (VoiceFreDeque.size()>=80) {
-                                VoiceFreDeque.pop();
+                                VoiceFreDeque.poll();
                             }
                             if ((maxFre+preMaxFre)/2>=49 && (maxFre+preMaxFre)/2<=500){
                                 if (preMaxFre>=49 && preMaxFre<=500) {
@@ -571,7 +575,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
 //                            VoiceFreDeque.add((float) maxFre);
                         }else {
                             if (VoiceFreDeque.size()>=80) {
-                                VoiceFreDeque.pop();
+                                VoiceFreDeque.poll();
                             }
                             VoiceFreDeque.add((float) 0);
                         }
@@ -621,6 +625,10 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     //    byte[] bytes = new byte[fftNum];
     short[] shorts_Analy = new short[fftNum/2];
     short[] shortsForreplay_Analy = new short[fftNum/2];
+    int femaleNum=0,maleNum=0;//180~310,80~165
+    int otherNum=0,averageValue=0;
+    float lowValue=0,highValue=0,midValue=0;
+    ArrayDeque<Float> VoiceFreDequeAnaly=new ArrayDeque<>();
     private void startRecordAnaly(){
         Log.i(TAG,"---startRecordAnaly---");
         fname_Analy= String.valueOf(new Date().getTime());
@@ -632,6 +640,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         new Thread(new Runnable() {
             @Override
             public void run() {
+                VoiceFreDequeAnaly.clear();//8-12，由于该容器外置，所以每次调用录音需要重置其内容
                 mAudioRecord.startRecording();//开始录制
                 FileOutputStream fileOutputStream = null;
                 FileOutputStream fileOutputStreamReplay = null;
@@ -642,54 +651,40 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
 //                    bytes = new byte[fftNum];//16位即2比特一个数值，所以fft计算点为该大小/2
                     shorts_Analy=new short[fftNum/2];
                     LinkedHashMap<Double,Double> hmAllFre;
-                    ArrayDeque<Float> VoiceFreDeque=new ArrayDeque<>(80);
                     for (int i=0;i<80;++i){
-                        VoiceFreDeque.push((float) 0);
+                        VoiceFreDequeAnaly.add((float) 0);
                     }
                     double preMaxFre=0;
                     while (mWhetherRecord_Analy){
                         mAudioRecord.read(shorts_Analy, 0, shorts_Analy.length);//读取流
                         shortsForreplay_Analy=Arrays.copyOf(shorts_Analy,shorts_Analy.length);
-                        //注意shorts是大端模式：低在低（前），高在高（后）
-                        Log.i("BYTES--LENGTH",shorts_Analy.length+"");
+
+//                        Log.i("BYTES--LENGTH",shorts_Analy.length+"");
                         List resList=FFT.fft(shorts_Analy);
                         double maxFre= (double) resList.get(0);
 //                        double preMaxFre= (double) resList.get(0);//并不精准，使用了两次fft的均值
-                        hmAllFre= (LinkedHashMap<Double, Double>) resList.get(1);
-                        Log.d(TAG,"hm大小"+hmAllFre.size());
-                        Log.d(TAG,"最大响度的频率："+maxFre);
+//                        hmAllFre= (LinkedHashMap<Double, Double>) resList.get(1);
+//                        Log.d(TAG,"hm大小"+hmAllFre.size());
+//                        Log.d(TAG,"最大响度的频率："+maxFre);
                         if (maxFre>=49 && maxFre<=500) {//过滤
-                            if (VoiceFreDeque.size()>=80) {
-                                VoiceFreDeque.pop();
+                            if (VoiceFreDequeAnaly.size()>=80) {
+//                                VoiceFreDeque.poll();//分析不设置容量上限
                             }
                             if ((maxFre+preMaxFre)/2>=49 && (maxFre+preMaxFre)/2<=500){
                                 if (preMaxFre>=49 && preMaxFre<=500) {
-                                    VoiceFreDeque.add((float) (maxFre+preMaxFre)/2);
+                                    VoiceFreDequeAnaly.add((float) (maxFre+preMaxFre)/2);
                                 }else {
-                                    VoiceFreDeque.add((float) maxFre);
+                                    VoiceFreDequeAnaly.add((float) maxFre);
                                 }
                             }
-//                            VoiceFreDeque.add((float) maxFre);
                         }else {
-                            if (VoiceFreDeque.size()>=80) {
-                                VoiceFreDeque.pop();
+                            if (VoiceFreDequeAnaly.size()>=80) {
+                                VoiceFreDequeAnaly.poll();
                             }
-                            VoiceFreDeque.add((float) 0);
+                            VoiceFreDequeAnaly.add((float) 0);
                         }
                         preMaxFre=maxFre;
 
-//                        if (pageNow==PAGE_1) {
-//                            updateChartVoice(VoiceFreDeque);//时间-主频率图
-//                        }
-//
-//                        if (pageNow==PAGE_2) {
-//                            updateChartFFTResult(hmAllFre);//某次fft的频谱图
-//                        }
-
-//                        while (count*128<bytes.length) {
-//                            FFT.fft(Arrays.copyOfRange(bytes,count*128,(count+1)*128));
-//                            count++;
-//                        }
                         fileOutputStream.write(short2byte(shorts_Analy));
                         fileOutputStream.flush();
                         fileOutputStreamReplay.write(short2byte(shortsForreplay_Analy));
@@ -817,7 +812,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     }
 
     //convert short to byte
-    private byte[] short2byte(short[] sData) {
+    public static byte[] short2byte(short[] sData) {
         int shortArrsize = sData.length;
         byte[] bytes = new byte[shortArrsize * 2];
         for (int i = 0; i < shortArrsize; i++) {
@@ -827,7 +822,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         }
         return bytes;
     }
-    public short[] byteArray2ShortArray(byte[] data) {
+    public static short[] byteArray2ShortArray(byte[] data) {
         short[] retVal = new short[data.length/2];
         for (int i = 0; i < retVal.length; i++)
             retVal[i] = (short) ((data[i * 2] & 0xff) | (data[i * 2 + 1] & 0xff) << 8);
@@ -963,8 +958,58 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                     btn_analy_toggle.setText("录制");
                     stopRecordAnaly();
                     //-TODO 分析并展示
-                    startActivity(new Intent(AudioActivity.this
-                            ,ResultPageActivity.class));
+                    /**
+                     * 分析处理
+                     * */
+                    List<Float> VoiceFreList=new ArrayList<>(VoiceFreDequeAnaly);
+                    Collections.sort(VoiceFreList);
+                    femaleNum=0;maleNum=0;//180~310,80~165
+                    otherNum=0;averageValue=0;lowValue=0;highValue=0;midValue=0;
+                    long all=0;
+                    for (int i=0;i<VoiceFreList.size();++i){
+                        float value=VoiceFreList.get(i);
+                        if (value<=49 || value>=320){
+                            VoiceFreList.remove(i);
+                            i--;
+                            continue;
+                        }
+                    }
+                    for (int i=0;i<VoiceFreList.size();++i){
+                        float value=VoiceFreList.get(i);
+                        if (value>=180 && value<=310){
+                            femaleNum++;
+                        }else if (value>=80 && value<=165){
+                            maleNum++;
+                        }
+                        all+=value;
+                    }
+                    otherNum=VoiceFreList.size()-femaleNum-maleNum;
+                    if (VoiceFreList.size()>0) {
+                        averageValue= (int) (all/VoiceFreList.size());
+                        lowValue=VoiceFreList.get((int)(VoiceFreList.size()*0.05));
+                        highValue=VoiceFreList.get((int)(VoiceFreList.size()*0.95));
+                        midValue=VoiceFreList.get((int)(VoiceFreList.size()*0.5));
+                    }else {
+                        averageValue= 0;
+                        lowValue=0;
+                        highValue=0;
+                        midValue=0;
+                    }
+
+                    Log.i(TAG+"-beforeResultIntent","分析结果："+femaleNum+","+
+                            maleNum+","+otherNum+","+lowValue+","+highValue+","+
+                            averageValue+","+midValue);
+                    Intent intent=new Intent(AudioActivity.this
+                            ,ResultPageActivity.class);
+                    intent.setAction("analyResult");
+                    intent.putExtra("female",femaleNum);
+                    intent.putExtra("male",maleNum);
+                    intent.putExtra("other",otherNum);
+                    intent.putExtra("low",lowValue);//float
+                    intent.putExtra("high",highValue);//float
+                    intent.putExtra("average",averageValue);
+                    intent.putExtra("mid",midValue);//float
+                    startActivity(intent);
                 }
                 break;
 
