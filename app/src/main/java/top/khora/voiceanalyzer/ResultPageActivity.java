@@ -1,6 +1,7 @@
 package top.khora.voiceanalyzer;
 
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -39,6 +40,8 @@ import java.util.List;
 
 import top.khora.voiceanalyzer.Util.FileUtils;
 import top.khora.voiceanalyzer.Util.SharedPreferenceUtil;
+
+import static top.khora.voiceanalyzer.R.color.resultFloatBtnPress;
 
 public class ResultPageActivity extends AppCompatActivity implements View.OnClickListener {
     private static final String TAG="ResultPageActivity";
@@ -159,7 +162,9 @@ public class ResultPageActivity extends AppCompatActivity implements View.OnClic
 
     private AudioTrack mAudioTrack;
     private File pcmFileAnaly;
-    private void replayForAnaly(final int replayTime){//输入单位为秒，播放最近的少于等于replayTime的音频
+    private Boolean needToPlay=true;
+    private Boolean isPlaying=false;
+    private void replayForAnaly(){//输入单位为秒，播放最近的少于等于replayTime的音频
         Log.i(TAG,"---replay---");
 //        stopRecord();//暂停录音
         mAudioTrack = new AudioTrack(
@@ -175,11 +180,12 @@ public class ResultPageActivity extends AppCompatActivity implements View.OnClic
                 AudioActivity.mRecordBufferSize,
                 AudioTrack.MODE_STREAM,
                 AudioManager.AUDIO_SESSION_ID_GENERATE);   //创建AudioTrack对象
-
         new Thread(new Runnable() {
             @Override
             public void run() {
                 if(mAudioTrack!=null){
+                    isPlaying=true;
+
                     mAudioTrack.play();   //开始播放，此时播放的数据为空
                     pcmFileAnaly=new File(ResultPageActivity.this.getExternalCacheDir().getPath(),
                             "audioRecordReplayAnaly.pcm");
@@ -194,7 +200,7 @@ public class ResultPageActivity extends AppCompatActivity implements View.OnClic
                             if (fis.available() > 0){
                                 Log.i(TAG,"FileInputStream可获取");
                                 int read=0;
-                                while ((read = fis.read(tempByteBuffer))!= -1 ){
+                                while (needToPlay && (read = fis.read(tempByteBuffer))!= -1 ){
                                     if(read == AudioTrack.ERROR_INVALID_OPERATION ||
                                             read == AudioTrack.ERROR_BAD_VALUE ||
                                             read ==AudioTrack.ERROR) {
@@ -204,7 +210,7 @@ public class ResultPageActivity extends AppCompatActivity implements View.OnClic
 //                                        Log.i(TAG+"-replay","read："+read);
                                         tempShortBuffer=AudioActivity
                                                 .byteArray2ShortArray(tempByteBuffer);
-                                        if (fis.available()<replayTime*AudioActivity.sampleRate*2) {
+                                        if (fis.available()>0) {
                                             mAudioTrack.write(tempShortBuffer,0,tempShortBuffer.length);  //将读取的数据写入到AudioTrack里面
                                         }
                                     }
@@ -217,8 +223,12 @@ public class ResultPageActivity extends AppCompatActivity implements View.OnClic
                         }catch (IOException e) {
                             e.printStackTrace();
                         }finally {
+                            isPlaying=false;
                             mAudioTrack.stop();
                             mAudioTrack.release();
+                            fab.setRippleColor(ContextCompat.getColor(ResultPageActivity.this
+                                    , resultFloatBtnPress));
+                            fab.setImageResource(android.R.drawable.ic_media_play);
                         }
                     }
                 }
@@ -245,7 +255,14 @@ public class ResultPageActivity extends AppCompatActivity implements View.OnClic
                 finish();
                 break;
             case R.id.analyresult_floatbutton:
-
+                if (!isPlaying) {//不在播放时按
+                    needToPlay=true;
+                    replayForAnaly();
+                    fab.setRippleColor(ContextCompat.getColor(this,R.color.resultFloatBtn));
+                    fab.setImageResource(android.R.drawable.ic_media_pause);
+                }else {//在播放时按
+                    needToPlay=false;
+                }
                 break;
         }
     }

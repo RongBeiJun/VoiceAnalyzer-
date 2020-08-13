@@ -98,12 +98,16 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="30dp"
+                android:background="@drawable/btn_shape_radius_male"
+                android:textColor="@color/white"
                 android:text="刷新" />
 
             <Button
                 android:id="@+id/analy_toggle_btn"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="@drawable/btn_shape_radius_female"
+                android:textColor="@color/white"
                 android:text="录制" />
 
 

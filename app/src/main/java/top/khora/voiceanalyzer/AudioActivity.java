@@ -153,15 +153,12 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
 
         articleTest= AssetsUtil.getAssetsToString(this,"article");
 
-        new Thread(){
+        audioHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                super.run();
-                while (spu==null) {
-                    getValueFromSPAndRendToWedgtForSetting();
-                }
+                getValueFromSPAndRendToWedgtForSetting();
             }
-        }.start();
+        },5000);
 
 
     }
@@ -886,8 +883,10 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         if (replay_time_int<5 || replay_time_int>25){
             Log.i(TAG,"获取到的重播时间获取失败或范围有误，不进行渲染");
         }else {
-            Log.i(TAG,"渲染成功");
-            et_replayTime.setText(String.valueOf(replay_time_int));
+            Log.i(TAG,"渲染成功：replayTime："+replay_time_int);
+            if (et_replayTime!=null) {
+                et_replayTime.setText(String.valueOf(replay_time_int));
+            }
             replayTime=replay_time_int;
         }
     }
