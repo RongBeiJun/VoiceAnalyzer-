@@ -99,7 +99,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private static final int PAGE_4=4;
     private int pageNow=1;
     private AudioTrack mAudioTrack;
-    private int replayTime=5000;
+    private int replayTime=5;
 
     private TextView tv_botton_return;
     private EditText et_replayTime;
@@ -110,7 +110,6 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     @Override
     protected void onStart() {
         super.onStart();
-        //-TODO 应该在子线程中运行
         new Thread(){
             @Override
             public void run() {
@@ -803,6 +802,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                             Message msg=new Message();
                             msg.what=REOPEN_RECORD;
                             audioHandler.sendMessageDelayed(msg,500);
+                            btn_replay.setOnClickListener(AudioActivity.this);//重置该按钮监听
                         }
                     }
                 }
@@ -908,7 +908,13 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 break;
             case R.id.audio_act_btn_replay:
                 Log.i(TAG,"重播录音-testBtn");
-                replay(replayTime/1000);//-TODO 重播时间 -Finished
+                btn_replay.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        //暂时关闭该按钮
+                    }
+                });
+                replay(replayTime);//-TODO 重播时间 -Finished
                 break;
             case R.id.audio_act_btn_page_fre:
                 Log.i(TAG,"频率页");

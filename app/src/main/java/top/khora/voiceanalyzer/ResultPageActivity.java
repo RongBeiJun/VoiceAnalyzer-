@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import top.khora.voiceanalyzer.Util.FileUtils;
 import top.khora.voiceanalyzer.Util.SharedPreferenceUtil;
 
 public class ResultPageActivity extends AppCompatActivity implements View.OnClickListener {
@@ -226,14 +227,25 @@ public class ResultPageActivity extends AppCompatActivity implements View.OnClic
 
     }
 
+    private void deleteReplayFile(){//onDestory调用删除本次分析的pcm文件
+        Log.i("TAG","删除本次分析的pcm文件,需要由结果页面的活动onDestory调用");
+        pcmFileAnaly.delete();
+    }
 
-
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        deleteReplayFile();
+    }
 
     @Override
     public void onClick(View v) {
         switch (v.getId()){
             case R.id.analyresult_botton_tv_return:
                 finish();
+                break;
+            case R.id.analyresult_floatbutton:
+
                 break;
         }
     }
