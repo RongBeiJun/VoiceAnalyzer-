@@ -2,6 +2,7 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <stroke android:color="#000000"
-        android:width="0.5dp"/>
+        android:width="0.5dp" />
+    <solid android:color="@color/resultChartBack"/>
 
 </shape>

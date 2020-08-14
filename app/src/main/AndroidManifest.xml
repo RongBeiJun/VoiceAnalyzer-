@@ -28,6 +28,9 @@
         <activity android:name=".ResultPageActivity"
             android:configChanges="keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize"
             android:theme="@style/MyFullScreenThemeForAppcompat"/>
+        <activity android:name="CustomizeTextActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize"
+            android:theme="@style/MyFullScreenThemeForAppcompat"/>
     </application>
 
 </manifest>

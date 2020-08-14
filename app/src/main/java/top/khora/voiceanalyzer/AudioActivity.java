@@ -104,13 +104,15 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private AudioTrack mAudioTrack;
     private int replayTime=5;
 
-    private TextView tv_botton_return;
+
     private EditText et_replayTime;
     private SharedPreferenceUtil spu;
 
     String articleTest;
     String sentenceTest[];
     private TextView tv_shortText;
+    private TextView tvSentenceSetter;
+    private TextView tvArticleSetter;
 
     @Override
     protected void onStart() {
@@ -352,6 +354,11 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         et_replayTime = findViewById(R.id.et_setting_replaytime);
         et_replayTime.setOnFocusChangeListener(this);
         getValueFromSPAndRendToWedgtForSetting();
+
+        tvSentenceSetter = findViewById(R.id.tv_setting_sentence);
+        tvArticleSetter = findViewById(R.id.tv_setting_article);
+        tvSentenceSetter.setOnClickListener(this);
+        tvArticleSetter.setOnClickListener(this);
 
     }
     private void initial_after(){
@@ -1066,6 +1073,18 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
 //            Log.e(TAG,sentenceTest.length+"变更阅读句子："+sentenceTv);
                     tv_shortText.setText(sentenceTv);
                 }
+                break;
+            case R.id.tv_setting_sentence:
+                Log.i(TAG,"跳转自定义短句页面");
+                Intent intentSentence=new Intent(this,CustomizeTextActivity.class);
+                intentSentence.setAction("sentence");
+                startActivity(intentSentence);
+                break;
+            case R.id.tv_setting_article:
+                Log.i(TAG,"跳转自定义文章页面");
+                Intent intentArticle=new Intent(this,CustomizeTextActivity.class);
+                intentArticle.setAction("article");
+                startActivity(intentArticle);
                 break;
 
         }
