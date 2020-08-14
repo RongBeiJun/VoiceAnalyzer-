@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/linearlayout_1"
-        android:visibility="gone"
+        android:visibility="visible"
         android:layout_weight="10"
         android:orientation="vertical">
 
@@ -30,20 +30,50 @@
             android:visibility="gone"
             android:layout_gravity="center_horizontal"
             android:text="停止录制" />
-        <Button
-            android:id="@+id/audio_act_btn_replay"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:visibility="visible"
-            android:layout_gravity="center_horizontal"
-            android:text="回播" />
+
         <top.khora.voiceanalyzer.Util.DetailScatterChart
             android:id="@+id/chart_voice"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" >
+            android:layout_height="wrap_content"
+            android:layout_weight="2">
         </top.khora.voiceanalyzer.Util.DetailScatterChart>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:background="@color/gender_male_light"
+            android:orientation="horizontal">
 
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="55dp"
+                android:background="@color/myGrey"
+                android:layout_weight="1"
+                tools:ignore="NestedWeights">
+                <TextView
+                    android:id="@+id/short_text_read_tv"
+                    android:layout_width="wrap_content"
+                    android:layout_height="55dp"
+                    android:focusable="false"
+                    android:padding="3dp"
+                    android:textColor="@color/white"
+                    android:layout_gravity="center"
+                    android:text="只有在人群中间，才能认识自己"
+                    android:textSize="18sp" />
+            </ScrollView>
+            <Button
+                android:id="@+id/audio_act_btn_replay"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center_vertical"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="5dp"
+                android:layout_weight="5"
+                android:background="@android:drawable/ic_popup_sync"
+                android:visibility="visible"
+                tools:ignore="NestedWeights"/>
+
+        </LinearLayout>
     </LinearLayout>
     <LinearLayout
         android:layout_width="match_parent"
@@ -99,7 +129,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginRight="30dp"
                 android:background="@drawable/btn_shape_radius_male"
-                android:textColor="@color/white"
+                android:textColor="@color/gender_female_light"
                 android:text="刷新" />
 
             <Button
@@ -107,7 +137,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/btn_shape_radius_female"
-                android:textColor="@color/white"
+                android:textColor="@color/gender_male_light"
                 android:text="录制" />
 
 
@@ -169,7 +199,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:background="@drawable/btn_shape_radius_left"
+            android:background="@color/bottom_btn_background"
             android:text="频率"
             android:textColor="@color/bottom_btn_textColor" />
 
@@ -196,7 +226,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:background="@drawable/btn_shape_radius_right"
+            android:background="@color/bottom_btn_background"
             android:text="设置"
             android:textColor="@color/bottom_btn_textColor" />
     </LinearLayout>

@@ -9,8 +9,8 @@
     <color name="testChart2">#AA0961</color>
     <color name="gender_male">#5ACDF9</color>
     <color name="gender_female">#DAB8D0</color>
-    <color name="gender_male_light">#335ACDF9</color>
-    <color name="gender_female_light">#33DAB8D0</color>
+    <color name="gender_male_light">#D95ACDF9</color>
+    <color name="gender_female_light">#D9DAB8D0</color>
     <color name="scatter_point">#F44336</color>
     <color name="scatter_point_text">#673AB7</color>
     <color name="bottom_btn_background">#69A5FF</color>

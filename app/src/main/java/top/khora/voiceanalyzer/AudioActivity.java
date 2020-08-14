@@ -20,6 +20,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -37,6 +38,7 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.data.ScatterData;
 import com.github.mikephil.charting.data.ScatterDataSet;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -59,6 +61,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import top.khora.voiceanalyzer.Util.ArrayUtil;
 import top.khora.voiceanalyzer.Util.AssetsUtil;
 import top.khora.voiceanalyzer.Util.DetailScatterChart;
 import top.khora.voiceanalyzer.Util.FFT;
@@ -97,7 +100,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private static final int PAGE_2=2;
     private static final int PAGE_3=3;
     private static final int PAGE_4=4;
-    private int pageNow=1;
+    private int pageNow=0;//初始值不能为1，否则开启时不能初始化第一个页面
     private AudioTrack mAudioTrack;
     private int replayTime=5;
 
@@ -106,6 +109,8 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private SharedPreferenceUtil spu;
 
     String articleTest;
+    String sentenceTest[];
+    private TextView tv_shortText;
 
     @Override
     protected void onStart() {
@@ -151,7 +156,14 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         initial1();
         initial_after();
 
-        articleTest= AssetsUtil.getAssetsToString(this,"article");
+        audioHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                articleTest= AssetsUtil.getAssetsToString(AudioActivity.this,"article");
+                sentenceTest=AssetsUtil.getAssetsToString(AudioActivity.this,"sentence").split("。。");
+            }
+        });
+
 
         audioHandler.postDelayed(new Runnable() {
             @Override
@@ -159,6 +171,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 getValueFromSPAndRendToWedgtForSetting();
             }
         },5000);
+        //        Log.e(TAG, ArrayUtil.arrayToList(sentenceTest).toString());
 
 
     }
@@ -224,6 +237,8 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         linearLayout2 = findViewById(R.id.linearlayout_2);
         linearLayout3 = findViewById(R.id.linearlayout_3);
         linearLayout4 = findViewById(R.id.linearlayout_4);
+
+        tv_shortText = findViewById(R.id.short_text_read_tv);
     }
     private void switchLayout(int linearLayoutNum){//目前由initial 1~4方法调用
         Log.e(TAG,"切换内布局到："+linearLayoutNum);
@@ -237,6 +252,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 btn_fft.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor));
                 btn_analy.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor));
                 btn_set.setTextColor(ContextCompat.getColor(this,bottom_btn_textColor));
+                tv_shortText.setOnClickListener(this);
                 pageNow=PAGE_1;
                 break;
             case 2:
@@ -276,6 +292,10 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         }
     }
     private void initial1(){
+        if (pageNow==PAGE_1){
+            Log.i(TAG,"当前已经在第"+PAGE_1+"页了,拒绝本次初始化");
+            return;
+        }
         switchLayout(1);
         chart_voice = findViewById(R.id.chart_voice);
         if (!mWhetherRecord) {
@@ -283,8 +303,22 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
             initAudioRecord();
             startRecord();
         }
+        audioHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (sentenceTest!=null){
+                    String sentenceTv=sentenceTest[(int) (Math.random()*sentenceTest.length)];
+//            Log.e(TAG,sentenceTest.length+"变更阅读句子："+sentenceTv);
+                    tv_shortText.setText(sentenceTv);
+                }
+            }
+        },3000);
     }
     private void initial2(){
+        if (pageNow==PAGE_2){
+            Log.i(TAG,"当前已经在第"+PAGE_2+"页了,拒绝本次初始化");
+            return;
+        }
         switchLayout(2);
         chart_fft = findViewById(R.id.chart_fft);
         if (!mWhetherRecord) {
@@ -294,6 +328,10 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         }
     }
     private void initial3(){
+        if (pageNow==PAGE_3){
+            Log.i(TAG,"当前已经在第"+PAGE_3+"页了,拒绝本次初始化");
+            return;
+        }
         switchLayout(3);
         if (mWhetherRecord) {
             Log.i(TAG+"initial3","播放运行中,切换到分析页面需要断开");
@@ -306,6 +344,10 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
 
     }
     private void initial4(){
+        if (pageNow==PAGE_4){
+            Log.i(TAG,"当前已经在第"+PAGE_4+"页了,拒绝本次初始化");
+            return;
+        }
         switchLayout(4);
         et_replayTime = findViewById(R.id.et_setting_replaytime);
         et_replayTime.setOnFocusChangeListener(this);
@@ -550,7 +592,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                         mAudioRecord.read(shorts, 0, shorts.length);//读取流
                         shortsForreplay=Arrays.copyOf(shorts,shorts.length);
                         //注意shorts是大端模式：低在低（前），高在高（后）
-                        Log.i("BYTES--LENGTH",shorts.length+"");
+                        Log.d("BYTES--LENGTH",shorts.length+"");
                         List resList=FFT.fft(shorts);
                         double maxFre= (double) resList.get(0);
 //                        double preMaxFre= (double) resList.get(0);//并不精准，使用了两次fft的均值
@@ -913,7 +955,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                         //暂时关闭该按钮
                     }
                 });
-                replay(replayTime);//-TODO 重播时间 -Finished
+                replay(replayTime);
                 break;
             case R.id.audio_act_btn_page_fre:
                 Log.i(TAG,"频率页");
@@ -1015,6 +1057,14 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                     intent.putExtra("average",averageValue);
                     intent.putExtra("mid",midValue);//float
                     startActivity(intent);
+                }
+                break;
+            case R.id.short_text_read_tv:
+                Log.i(TAG,"刷新阅读句子的textView");
+                if (sentenceTest!=null){
+                    String sentenceTv=sentenceTest[(int) (Math.random()*sentenceTest.length)];
+//            Log.e(TAG,sentenceTest.length+"变更阅读句子："+sentenceTv);
+                    tv_shortText.setText(sentenceTv);
                 }
                 break;
 
