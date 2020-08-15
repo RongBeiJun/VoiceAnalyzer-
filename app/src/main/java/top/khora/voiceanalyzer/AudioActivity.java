@@ -31,6 +31,7 @@ import android.widget.Toast;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.charts.ScatterChart;
 import com.github.mikephil.charting.components.Description;
+import com.github.mikephil.charting.components.MarkerImage;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
@@ -108,7 +109,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     private EditText et_replayTime;
     private SharedPreferenceUtil spu;
 
-    String articleTest;
+    List<String> articleTest=new ArrayList<>();
     String sentenceTest[];
     private TextView tv_shortText;
     private TextView tvSentenceSetter;
@@ -161,8 +162,13 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         audioHandler.post(new Runnable() {
             @Override
             public void run() {
-                articleTest= AssetsUtil.getAssetsToString(AudioActivity.this,"article");
-                sentenceTest=AssetsUtil.getAssetsToString(AudioActivity.this,"sentence").split("。。");
+                sentenceTest=AssetsUtil.getAssetsToString(AudioActivity.this
+                        ,"sentence").split("。。");
+                for (int i=0;i<5;++i){
+                    articleTest.add(AssetsUtil.getAssetsToString(
+                            AudioActivity.this,"article"+i
+                    ));
+                }
             }
         });
 
@@ -305,16 +311,24 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
             initAudioRecord();
             startRecord();
         }
-        audioHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (sentenceTest!=null){
-                    String sentenceTv=sentenceTest[(int) (Math.random()*sentenceTest.length)];
-//            Log.e(TAG,sentenceTest.length+"变更阅读句子："+sentenceTv);
-                    tv_shortText.setText(sentenceTv);
+        String sentence="";
+        if (spu!=null){
+            sentence = spu.getString("sentence", "");
+        }
+        if (sentence.length()==0) {
+            audioHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    if (sentenceTest!=null){
+                        String sentenceTv=sentenceTest[(int) (Math.random()*sentenceTest.length)];
+    //            Log.e(TAG,sentenceTest.length+"变更阅读句子："+sentenceTv);
+                        tv_shortText.setText(sentenceTv);
+                    }
                 }
-            }
-        },3000);
+            },3000);
+        }else {
+            tv_shortText.setText(sentence);
+        }
     }
     private void initial2(){
         if (pageNow==PAGE_2){
@@ -339,8 +353,29 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
             Log.i(TAG+"initial3","播放运行中,切换到分析页面需要断开");
             stopRecord();
         }
-        tv_analy_article.setText(articleTest);
-        //-TODO toggle状态还原 -Finished
+
+        String article="";
+        if (spu!=null){
+            article = spu.getString("article", "");
+        }
+        if (article.length()==0) {
+            audioHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    if (sentenceTest!=null){
+                        String articleTv=articleTest.get((int)(articleTest.size()* Math.random()));
+                        Log.e(TAG,articleTest.size()+"变更阅读短文："+articleTv);
+                        tv_analy_article.setText(articleTv);
+                    }else{
+                        Log.e(TAG,"超时，短文加载失败！！！----使用string.xml中的默认短文");
+                        tv_analy_article.setText(getString(R.string.default_article));
+                    }
+                }
+            },10);//不是起始子页，asset和spu加载工作应该完成了
+        }else {
+            tv_analy_article.setText(article);
+        }
+
         STATUS_analy_toggle_btn=0;
         btn_analy_toggle.setText("录制");
 
@@ -985,6 +1020,22 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                 break;
             case R.id.analy_reflesh_article_btn:
                 Log.i(TAG,"分析页刷新文章");
+                audioHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (sentenceTest!=null){
+                            String articleTv=articleTest.get((int)(articleTest.size()* Math.random()));
+                            Log.e(TAG,articleTest.size()+"变更阅读短文："+articleTv);
+                            tv_analy_article.setText(articleTv);
+                        }else{
+                            Log.e(TAG,"超时，短文加载失败！！！----使用string.xml中的默认短文");
+                            tv_analy_article.setText(getString(R.string.default_article));
+                        }
+                    }
+                },0);
+
+                //去除spu存储短文
+                spu.removeKey("article","");
 
                 break;
             case R.id.analy_toggle_btn:
@@ -1072,6 +1123,10 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
                     String sentenceTv=sentenceTest[(int) (Math.random()*sentenceTest.length)];
 //            Log.e(TAG,sentenceTest.length+"变更阅读句子："+sentenceTv);
                     tv_shortText.setText(sentenceTv);
+                }
+                if (spu!=null){
+                    //去除spu存储短句
+                    spu.removeKey("sentence","");
                 }
                 break;
             case R.id.tv_setting_sentence:

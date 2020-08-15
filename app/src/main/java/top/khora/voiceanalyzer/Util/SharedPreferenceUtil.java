@@ -38,4 +38,5 @@ public class SharedPreferenceUtil {
 /**
  * 记录：
  * ResultPageActivity-replay_time
+ * CustomizeTextActivity-sentence
  * */

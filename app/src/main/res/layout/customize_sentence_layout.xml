@@ -16,8 +16,10 @@
                 android:layout_height="match_parent"
                 android:minLines="5"
                 android:gravity="top"
+                android:hint="请输入用于频率页面展示的自定义阅读短句，推荐使用5~30个字符"
                 android:textSize="24dp"
-                android:padding="20dp"/>
+                android:padding="20dp"
+                android:id="@+id/et_input_comtomize_sentence"/>
 
         </ScrollView>
     </LinearLayout>
@@ -34,7 +36,24 @@
             android:layout_height="match_parent"
             android:gravity="center"
             android:textColor="@color/bottom_btn_textColor"
+            android:id="@+id/tv_setting_clear_sentence"
+            android:textSize="26sp"
+            android:text="清除"/>
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.5"
+        android:background="@color/bottom_btn_background"
+        android:gravity="center"
+        android:orientation="vertical">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:textColor="@color/bottom_btn_textColor"
             android:id="@+id/tv_commit_setting"
+            android:layout_marginTop="1dp"
             android:textSize="26sp"
             android:text="确定"/>
     </LinearLayout>
