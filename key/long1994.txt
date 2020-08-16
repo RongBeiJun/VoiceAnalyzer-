@@ -1,0 +1,1 @@
+keytool -export -rfc -keystore mykey.jks -alias key0 -file upload_certificate_fjd.pem
